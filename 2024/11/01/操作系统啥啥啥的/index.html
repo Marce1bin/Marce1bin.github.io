@@ -291,7 +291,7 @@
 
             <span class="meta-info-item post-update-date">
                 <i class="icon fa-solid fa-file-pen"></i>&nbsp;
-                <span class="datetime" data-updated="Fri Nov 01 2024 21:27:48 GMT+0800">2024-11-01 21:27:48</span>
+                <span class="datetime" data-updated="Fri Nov 01 2024 21:43:13 GMT+0800">2024-11-01 21:43:13</span>
             </span>
         
 
@@ -323,7 +323,7 @@
         
         
             <span class="meta-info-item post-wordcount">
-                <i class="icon fas fa-file-word"></i>&nbsp;<span>1k 字</span>
+                <i class="icon fas fa-file-word"></i>&nbsp;<span>1.1k 字</span>
             </span>
         
         
@@ -366,6 +366,11 @@
 <p>$代表当前指令地址，$$代表当前section起始地址，两个相减就是本扇区已用空间</p>
 <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">times 510-($-$$) db 0 ;填充0，使程序长度为512字节，-($-$$)表示当前地址减去该section的起始地址</span><br></pre></td></tr></table></figure>
 
+<p>通过nasm编译出二进制文件</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">nasm -o mbr.bin mbr.S</span><br></pre></td></tr></table></figure>
+
+<p>放ida里看一眼，嘿嘿</p>
+<p>![image-20241101214308685.png)</p>
 <p>不能直接.&#x2F;mbr.bin运行（蠢比），需要BIOS引导</p>
 <p><img   src="/2024/10/31/%E7%BD%91%E9%BC%8E%E6%9D%AFpwn4%E5%A4%8D%E7%8E%B0/mage-20241101094946304.png"  alt="image-20241101094946304"></p>
 <p>这么来看必须要在我的wsl上搞一个虚拟环境了。。。</p>
