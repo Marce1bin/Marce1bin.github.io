@@ -291,7 +291,7 @@
 
             <span class="meta-info-item post-update-date">
                 <i class="icon fa-solid fa-file-pen"></i>&nbsp;
-                <span class="datetime" data-updated="Fri Nov 01 2024 00:45:35 GMT+0800">2024-11-01 00:45:35</span>
+                <span class="datetime" data-updated="Fri Nov 01 2024 21:27:48 GMT+0800">2024-11-01 21:27:48</span>
             </span>
         
 
@@ -323,12 +323,12 @@
         
         
             <span class="meta-info-item post-wordcount">
-                <i class="icon fas fa-file-word"></i>&nbsp;<span>46 字</span>
+                <i class="icon fas fa-file-word"></i>&nbsp;<span>1k 字</span>
             </span>
         
         
             <span class="meta-info-item post-min2read">
-                <i class="icon fas fa-clock"></i>&nbsp;<span>1 分钟</span>
+                <i class="icon fas fa-clock"></i>&nbsp;<span>4 分钟</span>
             </span>
         
         
@@ -350,7 +350,38 @@
                     
 
                     
-                         <h1 id="操作系统啥啥啥啥"><a href="#操作系统啥啥啥啥" class="headerlink" title="操作系统啥啥啥啥"></a>操作系统啥啥啥啥</h1><p>​	南大的jyy操作系统课&amp;操作系统真相还原:-)，9月份开始念拖到现在，抽出空闲时间尽量做吧。</p>
+                         <h1 id="操作系统咕咕咕咕"><a href="#操作系统咕咕咕咕" class="headerlink" title="操作系统咕咕咕咕"></a>操作系统咕咕咕咕</h1><p>南大的jyy操作系统课&amp;操作系统真相还原:-)，9月份开始念拖到现在，抽出空闲时间尽量做吧。</p>
+<h1 id="BIOS-MBR"><a href="#BIOS-MBR" class="headerlink" title="BIOS &amp; MBR"></a>BIOS &amp; MBR</h1><p>BIOS是计算机上第一个运行的软件，由只读存储器ROM加载。程序通电后cs:ip寄存器强制初始化为0xf000:0xfff0，就是地址0xffff0，这段代码会跳转到0xfeb50处，就是BIOS代码真正开始的地方。BIOS会检查外设信息、初始化硬件、引导加载程序。它的最后一项工作就是校验启动盘里0盘0道1扇区的内容，就是去找主引导记录MBR，确认上去末尾两个字节分别是0x55和0xaa后就表明该扇区是可加载的程序。</p>
+<p>MBR用来引导操作系统，在被确认可引导后会被加载到物理地址0x7c00的位置（为什么是这个位置是个历史遗留问题），然后BIOS跳转到这个位置。mbr是干嘛的？</p>
+<p><img   src="/2024/10/31/%E7%BD%91%E9%BC%8E%E6%9D%AFpwn4%E5%A4%8D%E7%8E%B0/mage-20241101091323904.png"  alt="image-20241101091323904"></p>
+<p>然后书上给了个实例汇编代码……用来实现mbr……这应该不是传统意义上的mbr，毕竟他的作用就是清屏、定位光标、打印一行字符串，但是模拟了BIOS启动到加载mbr、运行mbr的过程</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line">section MBR vstart=0x7c00</span><br><span class="line">    mov ax, cs</span><br><span class="line">    mov ds, ax</span><br><span class="line">    mov es, ax</span><br><span class="line">    mov ss, ax</span><br><span class="line">    mov fs, ax ;cs为0，为各个寄存器中转赋值</span><br><span class="line">    mov sp, 0x7c00</span><br><span class="line"></span><br><span class="line">    mov ax, 0x600 ;ah功能号=6，向上或向下滚动行，即为清屏，al=0即为全部行</span><br><span class="line">    mov bx, 0x700 ;</span><br><span class="line">    mov cx, 0x0 ;</span><br><span class="line">    mov dx, 0x184f ; 上面三个是参数</span><br><span class="line">    int 0x10 ;显示和视频中断</span><br><span class="line"></span><br><span class="line">    mov ah, 3 ; 获取光标位置</span><br><span class="line">    mov bh, 0 ; 在第一页获取</span><br><span class="line">    int 0x10</span><br><span class="line"></span><br><span class="line">    mov ax, message</span><br><span class="line">    mov bp, ax ;bp是段偏移寄存器，无法mov直接数，所以用ax暂存字符串地址</span><br><span class="line">    </span><br><span class="line">    mov cx, 16 ;串长度</span><br><span class="line">    mov ax, 0x1301 ;ah=13，显示字符及属性，al=1，显示字符串，光标跟随移动</span><br><span class="line">    mov bx, 0x2 ; bh=0，显示页，bl=2，黑底绿字</span><br><span class="line">    int 0x10</span><br><span class="line"></span><br><span class="line">    jmp $ ;$代表当前地址，即无限循环</span><br><span class="line"></span><br><span class="line">    message: db &#x27;Hello, OS world!&#x27;</span><br><span class="line">    times 510-($-$$) db 0 ;填充0，使程序长度为512字节，-($-$$)表示当前地址减去该section的起始地址</span><br><span class="line">    db 0x55, 0xaa ;最后两个字节为可加载标志，0x55, 0xaa，一共512字节</span><br></pre></td></tr></table></figure>
+
+<h3 id="注意的点"><a href="#注意的点" class="headerlink" title="注意的点"></a>注意的点</h3><p>不能把直接数赋给cs:ip寄存器，可以通过其他寄存器暂存的方法间接赋予。不然就会这样：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">mbr.S:22: error: invalid combination of opcode and operands</span><br></pre></td></tr></table></figure>
+
+<p>ax寄存器高8位ah用来作为调用功能号存储，低8位al用来传递数据或参数</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">mov ax, 0x600 ;ah功能号=6，向上或向下滚动行，即为清屏，al=0即为全部行</span><br></pre></td></tr></table></figure>
+
+<p>$代表当前指令地址，$$代表当前section起始地址，两个相减就是本扇区已用空间</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">times 510-($-$$) db 0 ;填充0，使程序长度为512字节，-($-$$)表示当前地址减去该section的起始地址</span><br></pre></td></tr></table></figure>
+
+<p>不能直接.&#x2F;mbr.bin运行（蠢比），需要BIOS引导</p>
+<p><img   src="/2024/10/31/%E7%BD%91%E9%BC%8E%E6%9D%AFpwn4%E5%A4%8D%E7%8E%B0/mage-20241101094946304.png"  alt="image-20241101094946304"></p>
+<p>这么来看必须要在我的wsl上搞一个虚拟环境了。。。</p>
+<p>————————————————————————————————————————————————————————————</p>
+<p>然后过了艰难的一段调bochs环境，最终我原封不动的下了和书上相同的bochs版本，原封不动的把配置流程走了一遍，但是并没有“没有启动盘”的报错，有点心虚。。。</p>
+<p>首先创建一个虚拟硬盘作为我们的启动盘：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">bin/bximage -hd -mode=<span class="string">&quot;flat&quot;</span> -size=60 -q hd60M.img</span><br></pre></td></tr></table></figure>
+
+<p>然后使用磁盘操作命令dd将我们的二进制文件mbr.bin数据输入到这个虚拟硬盘里：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">marcel@Flag-Fish-Tournament:~/OS/bochs$ <span class="built_in">dd</span> <span class="keyword">if</span>=/home/marcel/OS/mbr.bin of=/home/marcel/OS/bochs/hd60M.img bs=512 count=1 conv=notrunc</span><br></pre></td></tr></table></figure>
+
+<p>​	启动bochs，6，回车，c（和gdb一样的命令）启动</p>
+<p><img   src="/2024/10/31/%E7%BD%91%E9%BC%8E%E6%9D%AFpwn4%E5%A4%8D%E7%8E%B0/mage-20241101210256854.png"  alt="image-20241101210256854"></p>
+<p>打印出来了一行绿色的字，从初始的回显可以看出起始地址在0xffff0，然后跳转到0xfe05b的位置，就是BIOS的起始地址，然后BIOS巴拉巴拉……最终检测到0盘0道1扇区末尾有魔数0x55aa，直接跳转到0x7c00的位置，执行了我们自己写的mbr。</p>
+<p>Hello, OS world!</p>
+<p>始于足下。</p>
 
                     
                 </div>
@@ -496,7 +527,7 @@
             <div class="pc-post-toc right-toc">
                 <div class="post-toc-wrap border-box">
     <div class="post-toc border-box">
-        <ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%95%A5%E5%95%A5%E5%95%A5%E5%95%A5"><span class="nav-text">操作系统啥啥啥啥</span></a></li></ol>
+        <ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%92%95%E5%92%95%E5%92%95%E5%92%95"><span class="nav-text">操作系统咕咕咕咕</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#BIOS-MBR"><span class="nav-text">BIOS &amp; MBR</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%B3%A8%E6%84%8F%E7%9A%84%E7%82%B9"><span class="nav-text">注意的点</span></a></li></ol></li></ol></li></ol>
     </div>
 </div>
 
@@ -531,7 +562,7 @@
             
                 <span class="count-item border-box word">
                     <span class="item-type border-box">总字数</span>
-                    <span class="item-value border-box word">2.9k</span>
+                    <span class="item-value border-box word">3.9k</span>
                 </span>
             
 
@@ -679,7 +710,7 @@
             <div class="tablet-post-toc">
                 <div class="post-toc-wrap border-box">
     <div class="post-toc border-box">
-        <ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%95%A5%E5%95%A5%E5%95%A5%E5%95%A5"><span class="nav-text">操作系统啥啥啥啥</span></a></li></ol>
+        <ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%92%95%E5%92%95%E5%92%95%E5%92%95"><span class="nav-text">操作系统咕咕咕咕</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#BIOS-MBR"><span class="nav-text">BIOS &amp; MBR</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%B3%A8%E6%84%8F%E7%9A%84%E7%82%B9"><span class="nav-text">注意的点</span></a></li></ol></li></ol></li></ol>
     </div>
 </div>
 
