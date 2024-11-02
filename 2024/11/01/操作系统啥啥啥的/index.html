@@ -291,7 +291,7 @@
 
             <span class="meta-info-item post-update-date">
                 <i class="icon fa-solid fa-file-pen"></i>&nbsp;
-                <span class="datetime" data-updated="Sun Nov 03 2024 02:13:01 GMT+0800">2024-11-03 02:13:01</span>
+                <span class="datetime" data-updated="Sun Nov 03 2024 02:17:26 GMT+0800">2024-11-03 02:17:26</span>
             </span>
         
 
@@ -370,7 +370,7 @@
 <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">nasm -o mbr.bin mbr.S</span><br></pre></td></tr></table></figure>
 
 <p>放ida里看一眼，嘿嘿</p>
-<p>![image-20241101214308685.png)</p>
+<p><img   src="/2024/10/31/%E7%BD%91%E9%BC%8E%E6%9D%AFpwn4%E5%A4%8D%E7%8E%B0/mage-20241101214308685.png"  alt="image-20241101214308685"></p>
 <p>在偏移0x21的地方是汇编指令“mov     ax, 7C33h”，对应源码中的“mov ax, message”，而起始虚拟地址为0x7c00的条件下message的偏移确为0x7c33，所以程序确是以0x7c00为起始编址</p>
 <p>不能直接.&#x2F;mbr.bin运行（蠢比），需要BIOS引导</p>
 <p><img   src="/2024/10/31/%E7%BD%91%E9%BC%8E%E6%9D%AFpwn4%E5%A4%8D%E7%8E%B0/mage-20241101094946304.png"  alt="image-20241101094946304"></p>
