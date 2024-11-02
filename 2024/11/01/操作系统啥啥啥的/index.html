@@ -291,7 +291,7 @@
 
             <span class="meta-info-item post-update-date">
                 <i class="icon fa-solid fa-file-pen"></i>&nbsp;
-                <span class="datetime" data-updated="Fri Nov 01 2024 21:43:13 GMT+0800">2024-11-01 21:43:13</span>
+                <span class="datetime" data-updated="Sat Nov 02 2024 18:57:22 GMT+0800">2024-11-02 18:57:22</span>
             </span>
         
 
@@ -323,12 +323,12 @@
         
         
             <span class="meta-info-item post-wordcount">
-                <i class="icon fas fa-file-word"></i>&nbsp;<span>1.1k 字</span>
+                <i class="icon fas fa-file-word"></i>&nbsp;<span>2.6k 字</span>
             </span>
         
         
             <span class="meta-info-item post-min2read">
-                <i class="icon fas fa-clock"></i>&nbsp;<span>4 分钟</span>
+                <i class="icon fas fa-clock"></i>&nbsp;<span>10 分钟</span>
             </span>
         
         
@@ -351,7 +351,7 @@
 
                     
                          <h1 id="操作系统咕咕咕咕"><a href="#操作系统咕咕咕咕" class="headerlink" title="操作系统咕咕咕咕"></a>操作系统咕咕咕咕</h1><p>南大的jyy操作系统课&amp;操作系统真相还原:-)，9月份开始念拖到现在，抽出空闲时间尽量做吧。</p>
-<h1 id="BIOS-MBR"><a href="#BIOS-MBR" class="headerlink" title="BIOS &amp; MBR"></a>BIOS &amp; MBR</h1><p>BIOS是计算机上第一个运行的软件，由只读存储器ROM加载。程序通电后cs:ip寄存器强制初始化为0xf000:0xfff0，就是地址0xffff0，这段代码会跳转到0xfeb50处，就是BIOS代码真正开始的地方。BIOS会检查外设信息、初始化硬件、引导加载程序。它的最后一项工作就是校验启动盘里0盘0道1扇区的内容，就是去找主引导记录MBR，确认上去末尾两个字节分别是0x55和0xaa后就表明该扇区是可加载的程序。</p>
+<h2 id="BIOS-中断实现MBR"><a href="#BIOS-中断实现MBR" class="headerlink" title="BIOS &amp; 中断实现MBR"></a>BIOS &amp; 中断实现MBR</h2><p>BIOS是计算机上第一个运行的软件，由只读存储器ROM加载。程序通电后cs:ip寄存器强制初始化为0xf000:0xfff0，就是地址0xffff0，这段代码会跳转到0xfeb50处，就是BIOS代码真正开始的地方。BIOS会检查外设信息、初始化硬件、引导加载程序。它的最后一项工作就是校验启动盘里0盘0道1扇区的内容，就是去找主引导记录MBR，确认上去末尾两个字节分别是0x55和0xaa后就表明该扇区是可加载的程序。</p>
 <p>MBR用来引导操作系统，在被确认可引导后会被加载到物理地址0x7c00的位置（为什么是这个位置是个历史遗留问题），然后BIOS跳转到这个位置。mbr是干嘛的？</p>
 <p><img   src="/2024/10/31/%E7%BD%91%E9%BC%8E%E6%9D%AFpwn4%E5%A4%8D%E7%8E%B0/mage-20241101091323904.png"  alt="image-20241101091323904"></p>
 <p>然后书上给了个实例汇编代码……用来实现mbr……这应该不是传统意义上的mbr，毕竟他的作用就是清屏、定位光标、打印一行字符串，但是模拟了BIOS启动到加载mbr、运行mbr的过程</p>
@@ -371,6 +371,7 @@
 
 <p>放ida里看一眼，嘿嘿</p>
 <p>![image-20241101214308685.png)</p>
+<p>在偏移0x21的地方是汇编指令“mov     ax, 7C33h”，对应源码中的“mov ax, message”，而起始虚拟地址为0x7c00的条件下message的偏移确为0x7c33，所以程序确是以0x7c00为起始编址</p>
 <p>不能直接.&#x2F;mbr.bin运行（蠢比），需要BIOS引导</p>
 <p><img   src="/2024/10/31/%E7%BD%91%E9%BC%8E%E6%9D%AFpwn4%E5%A4%8D%E7%8E%B0/mage-20241101094946304.png"  alt="image-20241101094946304"></p>
 <p>这么来看必须要在我的wsl上搞一个虚拟环境了。。。</p>
@@ -380,13 +381,38 @@
 <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">bin/bximage -hd -mode=<span class="string">&quot;flat&quot;</span> -size=60 -q hd60M.img</span><br></pre></td></tr></table></figure>
 
 <p>然后使用磁盘操作命令dd将我们的二进制文件mbr.bin数据输入到这个虚拟硬盘里：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">marcel@Flag-Fish-Tournament:~/OS/bochs$ <span class="built_in">dd</span> <span class="keyword">if</span>=/home/marcel/OS/mbr.bin of=/home/marcel/OS/bochs/hd60M.img bs=512 count=1 conv=notrunc</span><br></pre></td></tr></table></figure>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">dd</span> <span class="keyword">if</span>=/home/marcel/OS/mbr.bin of=/home/marcel/OS/bochs/hd60M.img bs=512 count=1 conv=notrunc</span><br></pre></td></tr></table></figure>
 
 <p>​	启动bochs，6，回车，c（和gdb一样的命令）启动</p>
 <p><img   src="/2024/10/31/%E7%BD%91%E9%BC%8E%E6%9D%AFpwn4%E5%A4%8D%E7%8E%B0/mage-20241101210256854.png"  alt="image-20241101210256854"></p>
 <p>打印出来了一行绿色的字，从初始的回显可以看出起始地址在0xffff0，然后跳转到0xfe05b的位置，就是BIOS的起始地址，然后BIOS巴拉巴拉……最终检测到0盘0道1扇区末尾有魔数0x55aa，直接跳转到0x7c00的位置，执行了我们自己写的mbr。</p>
+<p>再小小改进一下……</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br></pre></td><td class="code"><pre><span class="line">section MBR vstart=0x7c00</span><br><span class="line">    mov ax, cs</span><br><span class="line">    mov ds, ax</span><br><span class="line">    mov es, ax</span><br><span class="line">    mov ss, ax</span><br><span class="line">    mov fs, ax</span><br><span class="line">    mov sp, 0x7c00 ;设置段寄存器</span><br><span class="line"></span><br><span class="line">    mov ax, 0x600 ;ah功能号=6，向上或向下滚动行，al=0即为全部行，即为清屏</span><br><span class="line">    mov bx, 0x700 ;</span><br><span class="line">    mov cx, 0x0 ;</span><br><span class="line">    mov dx, 0x184f ; 上面三个是参数</span><br><span class="line">    int 0x10 ;显示和视频中断</span><br><span class="line"></span><br><span class="line">    mov ah, 3 ; 获取光标位置</span><br><span class="line">    mov bh, 0 ; 在第一页获取</span><br><span class="line">    int 0x10</span><br><span class="line"></span><br><span class="line">    mov ax, message</span><br><span class="line">    mov bp, ax ;bp是段偏移寄存器，无法mov直接数，所以用ax暂存字符串地址</span><br><span class="line">    </span><br><span class="line">    mov cx, 8 ;循环8次</span><br><span class="line">    mov ax, 0x1301 ;ah=13，显示字符及属性，al=1，显示字符串，光标跟随移动</span><br><span class="line">    mov bx, 0x0 ; bh=0，显示页</span><br><span class="line">    mov dl, 0 ;从0列开始</span><br><span class="line">    mov dh, 0 ;从0行开始</span><br><span class="line"></span><br><span class="line">puts_8:</span><br><span class="line">    push cx ;保存cx</span><br><span class="line">    mov cx, 0x10</span><br><span class="line">    int 0x10</span><br><span class="line">    inc bl ;每次循环属性+1，打印出彩色</span><br><span class="line">    inc dh ;行+1</span><br><span class="line">    pop cx</span><br><span class="line">    loop puts_8</span><br><span class="line"></span><br><span class="line">    jmp $ ;$代表当前地址，即无限循环</span><br><span class="line"></span><br><span class="line">    message: db &#x27;Hello, OS world!&#x27;</span><br><span class="line">    times 510-($-$$) db 0 ;填充0，使程序长度为512字节，-($-$$)表示当前地址减去该section的起始地址</span><br><span class="line">    db 0x55, 0xaa ;最后两个字节为可加载标志，0x55, 0xaa，一共512字节</span><br></pre></td></tr></table></figure>
+
+<p><img   src="/2024/10/31/%E7%BD%91%E9%BC%8E%E6%9D%AFpwn4%E5%A4%8D%E7%8E%B0/mage-20241102185546245.png"  alt="image-20241102185546245"></p>
 <p>Hello, OS world!</p>
 <p>始于足下。</p>
+<h2 id="硬件实现mbr"><a href="#硬件实现mbr" class="headerlink" title="硬件实现mbr"></a>硬件实现mbr</h2><h3 id="一点点汇编补充"><a href="#一点点汇编补充" class="headerlink" title="一点点汇编补充"></a>一点点汇编补充</h3><p>然后的第三章作者用两小节补充了汇编相关的内容。之前有一点点pwn基础，少说也读过（心虚）csapp，所以像看小说一样很轻松的就看完了，包括实模式、地址分段、指令执行、寄存器、栈与相关操作、寻址方式与jmp、call的调用方式、flags寄存器这些内容。巩固了一些知识，也的确有额外的收获：</p>
+<p>在ida反汇编的时候，常常能看到这样的语句：</p>
+<p><img   src="/2024/10/31/%E7%BD%91%E9%BC%8E%E6%9D%AFpwn4%E5%A4%8D%E7%8E%B0/mage-20241102160012693.png"  alt="image-20241102160012693"></p>
+<p>在之前我只是直接理解为他会无条件跳转到0x187a这个位置，short是什么？</p>
+<p>相似的还有这样：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">jmp		near loc_15E3</span><br></pre></td></tr></table></figure>
+
+<p>near和short都是表明，在汇编成机器语言时这里是相对跳转而不是直接跳转，比如上面那个jmp short 187a在机器码中就是“EB 27”，eb表示相对近转移，27就是操作数，实际上等于 当前位置与0x187a之差-当前指令长度，near也是同理，他们在机器码中都是基于当前位置（在与目标位置同段，或者说相对比较近的情况下）进行相对跳转，你看机器码中的操作数并没有出现7a18，都不是直接跳转。</p>
+<p>书中将几种跳转方式分为相对短转移、相对近转移、间接绝对近转移、直接绝对远转移、间接绝对远转移，相对与绝对表示目标是与当前位置的偏移还是实际地址，直接间接表示目标数是直接数还是寄存器&#x2F;内存引用。</p>
+<p>这些东西知道了就是知道了，和之前不知道好像没区别。实际上有什么用呢？</p>
+<p>想起了之前暑假的时候考研学长和我说的话，的确如此……</p>
+<h3 id="IO接口"><a href="#IO接口" class="headerlink" title="IO接口"></a>IO接口</h3><p>为了解决cpu与各个硬件之间的不协调，就有了IO接口这一中间层，帮助cpu处理硬件，就像收作业的小组长。书中说到看不到声卡和显卡是因为他们集成在主板里面了，就是集成声卡集成显卡。那时候还是2013年，ai和3A游戏在我们眼里还是很遥远的词汇，显卡就是显示器和cpu之间的接口，想来真是感慨。书中说03年时作者看过一个特大的显卡，就像主板插在显卡上一样，这是不是当年的独显呢？</p>
+<p>硬件那些不多说了，看过就是看过。这个学期我甚至没报上数电实验（悲</p>
+<p>显存文本模式下内存地址为0xb8000，我们往上面写东西就会落到显存中，显存上有了数据就会往屏幕上面打印，某种意义上来说我们就可以不通过中断调用BIOS打印字符了</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br></pre></td><td class="code"><pre><span class="line">SECTION MBR vstart=0x7c00</span><br><span class="line">    mov ax, cs</span><br><span class="line">    mov ds, ax</span><br><span class="line">    mov es, ax</span><br><span class="line">    mov ss, ax</span><br><span class="line">    mov fs, ax</span><br><span class="line">    mov sp, 0x7c00</span><br><span class="line">    mov ax, 0xb800 </span><br><span class="line">    mov gs, ax ;设置gs为段寄存器，位置为0xb8000，即为显存文本模式的内存地址</span><br><span class="line"></span><br><span class="line">    mov ax, 0x600 ;ah功能号=6，向上或向下滚动行，al=0即为全部行，即为清屏</span><br><span class="line">    mov bx, 0x700 ;</span><br><span class="line">    mov cx, 0x0 ;</span><br><span class="line">    mov dx, 0x184f ; 上面三个是参数</span><br><span class="line">    int 0x10 ;显示和视频中断</span><br><span class="line"></span><br><span class="line">    mov byte [gs:0x00], &#x27;H&#x27; </span><br><span class="line">    mov byte [gs:0x01], 0xa4</span><br><span class="line"></span><br><span class="line">    mov byte [gs:0x02], &#x27;e&#x27;</span><br><span class="line">    mov byte [gs:0x03], 0xa4</span><br><span class="line"></span><br><span class="line">    mov byte [gs:0x04], &#x27;l&#x27;</span><br><span class="line">    mov byte [gs:0x05], 0xa4</span><br><span class="line"></span><br><span class="line">    mov byte [gs:0x06], &#x27;l&#x27;</span><br><span class="line">    mov byte [gs:0x07], 0xa4</span><br><span class="line">    </span><br><span class="line">    mov byte [gs:0x08], &#x27;o&#x27;</span><br><span class="line">    mov byte [gs:0x09], 0xa4</span><br><span class="line"></span><br><span class="line">    mov byte [gs:0x0a], &#x27; &#x27;</span><br><span class="line">    mov byte [gs:0x0b], 0xa4    </span><br><span class="line"></span><br><span class="line">    mov byte [gs:0x0c], &#x27;O&#x27;</span><br><span class="line">    mov byte [gs:0x0d], 0xa4</span><br><span class="line"></span><br><span class="line">    mov byte [gs:0x0e], &#x27;S&#x27;</span><br><span class="line">    mov byte [gs:0x0f], 0xa4 ;每个打印的字符占2个字节大小，低字节是字符ascii码，高字节是颜色和显示模式。0xa4代表绿色背景闪烁，前景色为红色(RGB)</span><br><span class="line"></span><br><span class="line">    jmp $</span><br><span class="line"></span><br><span class="line">    times 510-($-$$) db 0 ;填充0，使程序长度为512字节，-($-$$)表示当前地址减去该section的起始地址</span><br><span class="line">    db 0x55, 0xaa ;最后两个字节为可加载标志，0x55, 0xaa，一共512字节</span><br></pre></td></tr></table></figure>
+
+<p>与中断实现相比，这一版的代码改变了两处：一处是我们把gs定为显存的段寄存器，把它设为0xb800，实际上[gs:0xab]就是0xb80ab；另一处把通过中断打印的内容改成往显存文本模式内存中写字符显示的数据，就是通过gs寄存器做段寄存器寻址实现的</p>
+<p>然后重新编译，写入虚拟硬盘，启动bochs，看看效果如何：</p>
+<p><img   src="/2024/10/31/%E7%BD%91%E9%BC%8E%E6%9D%AFpwn4%E5%A4%8D%E7%8E%B0/mage-20241102182615336.png"  alt="image-20241102182615336"></p>
+<p>左上角有一个很小的“hello OS”</p>
+<p>实际上它在不断闪烁。</p>
 
                     
                 </div>
@@ -532,7 +558,7 @@
             <div class="pc-post-toc right-toc">
                 <div class="post-toc-wrap border-box">
     <div class="post-toc border-box">
-        <ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%92%95%E5%92%95%E5%92%95%E5%92%95"><span class="nav-text">操作系统咕咕咕咕</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#BIOS-MBR"><span class="nav-text">BIOS &amp; MBR</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%B3%A8%E6%84%8F%E7%9A%84%E7%82%B9"><span class="nav-text">注意的点</span></a></li></ol></li></ol></li></ol>
+        <ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%92%95%E5%92%95%E5%92%95%E5%92%95"><span class="nav-text">操作系统咕咕咕咕</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#BIOS-%E4%B8%AD%E6%96%AD%E5%AE%9E%E7%8E%B0MBR"><span class="nav-text">BIOS &amp; 中断实现MBR</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%B3%A8%E6%84%8F%E7%9A%84%E7%82%B9"><span class="nav-text">注意的点</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%A1%AC%E4%BB%B6%E5%AE%9E%E7%8E%B0mbr"><span class="nav-text">硬件实现mbr</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%B8%80%E7%82%B9%E7%82%B9%E6%B1%87%E7%BC%96%E8%A1%A5%E5%85%85"><span class="nav-text">一点点汇编补充</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#IO%E6%8E%A5%E5%8F%A3"><span class="nav-text">IO接口</span></a></li></ol></li></ol></li></ol>
     </div>
 </div>
 
@@ -567,7 +593,7 @@
             
                 <span class="count-item border-box word">
                     <span class="item-type border-box">总字数</span>
-                    <span class="item-value border-box word">3.9k</span>
+                    <span class="item-value border-box word">5.5k</span>
                 </span>
             
 
@@ -715,7 +741,7 @@
             <div class="tablet-post-toc">
                 <div class="post-toc-wrap border-box">
     <div class="post-toc border-box">
-        <ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%92%95%E5%92%95%E5%92%95%E5%92%95"><span class="nav-text">操作系统咕咕咕咕</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#BIOS-MBR"><span class="nav-text">BIOS &amp; MBR</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%B3%A8%E6%84%8F%E7%9A%84%E7%82%B9"><span class="nav-text">注意的点</span></a></li></ol></li></ol></li></ol>
+        <ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%92%95%E5%92%95%E5%92%95%E5%92%95"><span class="nav-text">操作系统咕咕咕咕</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#BIOS-%E4%B8%AD%E6%96%AD%E5%AE%9E%E7%8E%B0MBR"><span class="nav-text">BIOS &amp; 中断实现MBR</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%B3%A8%E6%84%8F%E7%9A%84%E7%82%B9"><span class="nav-text">注意的点</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%A1%AC%E4%BB%B6%E5%AE%9E%E7%8E%B0mbr"><span class="nav-text">硬件实现mbr</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%B8%80%E7%82%B9%E7%82%B9%E6%B1%87%E7%BC%96%E8%A1%A5%E5%85%85"><span class="nav-text">一点点汇编补充</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#IO%E6%8E%A5%E5%8F%A3"><span class="nav-text">IO接口</span></a></li></ol></li></ol></li></ol>
     </div>
 </div>
 
