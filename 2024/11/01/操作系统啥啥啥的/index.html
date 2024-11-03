@@ -291,7 +291,7 @@
 
             <span class="meta-info-item post-update-date">
                 <i class="icon fa-solid fa-file-pen"></i>&nbsp;
-                <span class="datetime" data-updated="Sun Nov 03 2024 02:17:26 GMT+0800">2024-11-03 02:17:26</span>
+                <span class="datetime" data-updated="Mon Nov 04 2024 00:36:47 GMT+0800">2024-11-04 00:36:47</span>
             </span>
         
 
@@ -323,12 +323,12 @@
         
         
             <span class="meta-info-item post-wordcount">
-                <i class="icon fas fa-file-word"></i>&nbsp;<span>4.7k 字</span>
+                <i class="icon fas fa-file-word"></i>&nbsp;<span>5.7k 字</span>
             </span>
         
         
             <span class="meta-info-item post-min2read">
-                <i class="icon fas fa-clock"></i>&nbsp;<span>18 分钟</span>
+                <i class="icon fas fa-clock"></i>&nbsp;<span>22 分钟</span>
             </span>
         
         
@@ -455,6 +455,26 @@
 <p>启动bochs，如果一切顺利，mbr将把第二扇区上的数据读取到0x900地址上并跳转到那里，往显存上写入2 loader这几个字符并出现在窗口上</p>
 <p><img   src="/2024/10/31/%E7%BD%91%E9%BC%8E%E6%9D%AFpwn4%E5%A4%8D%E7%8E%B0/mage-20241103015448849.png"  alt="image-20241103015448849"></p>
 <p>真好。绿底的2 loader不断闪动，就像20世纪的单机游戏通关彩蛋一样。</p>
+<h2 id="保护模式"><a href="#保护模式" class="headerlink" title="保护模式"></a>保护模式</h2><p>之前我们都是在实模式上学习和实践的，对标的就是8086处理器，16位，段寄存器+偏移寄存器寻址，但是实模式没有权限的概念，操作系统能到的内存用户也能到，安全性比较差，而且一次性只能运行一个程序，最大内存也只有1mb，所以之后出现了平坦模式，用一个32位寄存器就能寻址所有的地址，还有保护模式，寄存器增宽，使用段描述符寻址。但是由于兼容的原因，所以会出现16bit和32bit操作的相互转换，就是反转前缀，0x66和0x67，这里不多说。</p>
+<h3 id="段描述符"><a href="#段描述符" class="headerlink" title="段描述符"></a>段描述符</h3><p>为了区别各个内存片段之间的特征和权限，比如代码段就可读可执行不可写，数据段就可读可写不可执行，我们需要给各个内存段一点空间描述它的级别、大小之类的约束属性。，这就是段描述符</p>
+<p><img   src="C:\Users\彬彬\Desktop\HEXO-blog\source_posts\操作系统啥啥啥的\image-20241104000807505.png"  alt="image-20241104000807505"></p>
+<p>这样的一个段描述符一共8字节，这本书提到的各类描述符都是8字节。</p>
+<p>首先能注意到段基址和段界限，保护模式下地址总线宽度32位，所以必须要32位来描述这个段的位置，就是段基址，但是你会发现这32位段基址居然还不在一起，历史遗留问题。</p>
+<p>段界限就是这个段最大有多大，假如在这个段中访问的位置超过了段基址+段界限，那么就会触发异常。同时对于数据段和代码段，数据往高的内存地址增长，对于栈，数据往低的内存地址增长，相对应的段界限计算也不同。你可能还会注意到，段界限也是分散的。实际上还有一个G位和段界限有关系，如果G位是0，那么段边界就是段基址+段界限，如果是1，就是段基址+段界限*4kb</p>
+<p>对于高32位来说，首先S为0代表该段为系统段，为1就是数据段。根据S代表不同的系统与数据段，占4位的type会代表的段类型也会不同，详细如下</p>
+<p><img   src="C:\Users\彬彬\Desktop\HEXO-blog\source_posts\操作系统啥啥啥的\image-20241104001819172.png"  alt="image-20241104001819172"></p>
+<p>书中主要说明了非系统段的type作用，RC位代表的读写执行是不是有种熟悉的感觉……</p>
+<p>X代表代码段或数据段，代码段不可写，数据段不可执行。A由cpu设置，代表有没有被cpu访问过，如果有就置1。C代表一致性代码段，，，</p>
+<blockquote>
+<p>一致性代码段是指如果自己是转移的目标段，并且自己是一致性代码段，自己的特权级一定要高于当前特权级，转移后的特权级不与自己的 DPL 为主，而是与转移前的低特权级一致，也就是听从、依从转移前的低特权级。C 为 1 时则表示该段是一致性代码段，C 为 0 时则表示该段为非一致性代码段。</p>
+</blockquote>
+<p>好抽象……</p>
+<p>E代表向下或者向上拓展，对应之前说的代码段、数据段和栈段。</p>
+<p>段描述符的13-14位是DPL段，Descriptor Privilege Level，描述特权等级，分为0、1、2、3，数字越小特权越大，用户程序处于3，操作系统处于0。</p>
+<p>P段表示present，是否存在，如果检查到为0CPU就会抛出异常。有种绕过失败的既视感……</p>
+<p>AVL字段用来设置是否为64位代码段，1就是，否则代表32位</p>
+<p>D&#x2F;B，对于代码段此为D位，D为0，指令的有效地址和操作数就是16位，D为1就是32位；对于栈段，此为B位。B为0，使用sp寄存器，就是16位，B为1，使用esp，32位。</p>
+<p>G字段，用来指定段界限的单位，1字节或者4kb，前文已述。</p>
 
                     
                 </div>
@@ -600,7 +620,7 @@
             <div class="pc-post-toc right-toc">
                 <div class="post-toc-wrap border-box">
     <div class="post-toc border-box">
-        <ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%92%95%E5%92%95%E5%92%95%E5%92%95"><span class="nav-text">操作系统咕咕咕咕</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#BIOS-%E4%B8%AD%E6%96%AD%E5%AE%9E%E7%8E%B0MBR"><span class="nav-text">BIOS &amp; 中断实现MBR</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%B3%A8%E6%84%8F%E7%9A%84%E7%82%B9"><span class="nav-text">注意的点</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#mbr%E7%A1%AC%E4%BB%B6%E2%99%82%E4%BA%A4%E4%BA%92"><span class="nav-text">mbr硬件♂交互</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%B8%80%E7%82%B9%E7%82%B9%E6%B1%87%E7%BC%96-%E7%A1%AC%E4%BB%B6%E8%A1%A5%E5%85%85"><span class="nav-text">一点点汇编&amp;硬件补充</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%98%BE%E5%AD%98MBR"><span class="nav-text">显存MBR</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#mbr%E4%B9%8Bcan-can-need-%E7%A1%AC%E7%9B%98"><span class="nav-text">mbr之can can need 硬盘</span></a></li></ol></li></ol></li></ol>
+        <ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%92%95%E5%92%95%E5%92%95%E5%92%95"><span class="nav-text">操作系统咕咕咕咕</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#BIOS-%E4%B8%AD%E6%96%AD%E5%AE%9E%E7%8E%B0MBR"><span class="nav-text">BIOS &amp; 中断实现MBR</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%B3%A8%E6%84%8F%E7%9A%84%E7%82%B9"><span class="nav-text">注意的点</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#mbr%E7%A1%AC%E4%BB%B6%E2%99%82%E4%BA%A4%E4%BA%92"><span class="nav-text">mbr硬件♂交互</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%B8%80%E7%82%B9%E7%82%B9%E6%B1%87%E7%BC%96-%E7%A1%AC%E4%BB%B6%E8%A1%A5%E5%85%85"><span class="nav-text">一点点汇编&amp;硬件补充</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%98%BE%E5%AD%98MBR"><span class="nav-text">显存MBR</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#mbr%E4%B9%8Bcan-can-need-%E7%A1%AC%E7%9B%98"><span class="nav-text">mbr之can can need 硬盘</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F"><span class="nav-text">保护模式</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%AE%B5%E6%8F%8F%E8%BF%B0%E7%AC%A6"><span class="nav-text">段描述符</span></a></li></ol></li></ol></li></ol>
     </div>
 </div>
 
@@ -635,7 +655,7 @@
             
                 <span class="count-item border-box word">
                     <span class="item-type border-box">总字数</span>
-                    <span class="item-value border-box word">7.6k</span>
+                    <span class="item-value border-box word">8.6k</span>
                 </span>
             
 
@@ -783,7 +803,7 @@
             <div class="tablet-post-toc">
                 <div class="post-toc-wrap border-box">
     <div class="post-toc border-box">
-        <ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%92%95%E5%92%95%E5%92%95%E5%92%95"><span class="nav-text">操作系统咕咕咕咕</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#BIOS-%E4%B8%AD%E6%96%AD%E5%AE%9E%E7%8E%B0MBR"><span class="nav-text">BIOS &amp; 中断实现MBR</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%B3%A8%E6%84%8F%E7%9A%84%E7%82%B9"><span class="nav-text">注意的点</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#mbr%E7%A1%AC%E4%BB%B6%E2%99%82%E4%BA%A4%E4%BA%92"><span class="nav-text">mbr硬件♂交互</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%B8%80%E7%82%B9%E7%82%B9%E6%B1%87%E7%BC%96-%E7%A1%AC%E4%BB%B6%E8%A1%A5%E5%85%85"><span class="nav-text">一点点汇编&amp;硬件补充</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%98%BE%E5%AD%98MBR"><span class="nav-text">显存MBR</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#mbr%E4%B9%8Bcan-can-need-%E7%A1%AC%E7%9B%98"><span class="nav-text">mbr之can can need 硬盘</span></a></li></ol></li></ol></li></ol>
+        <ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%92%95%E5%92%95%E5%92%95%E5%92%95"><span class="nav-text">操作系统咕咕咕咕</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#BIOS-%E4%B8%AD%E6%96%AD%E5%AE%9E%E7%8E%B0MBR"><span class="nav-text">BIOS &amp; 中断实现MBR</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%B3%A8%E6%84%8F%E7%9A%84%E7%82%B9"><span class="nav-text">注意的点</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#mbr%E7%A1%AC%E4%BB%B6%E2%99%82%E4%BA%A4%E4%BA%92"><span class="nav-text">mbr硬件♂交互</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%B8%80%E7%82%B9%E7%82%B9%E6%B1%87%E7%BC%96-%E7%A1%AC%E4%BB%B6%E8%A1%A5%E5%85%85"><span class="nav-text">一点点汇编&amp;硬件补充</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%98%BE%E5%AD%98MBR"><span class="nav-text">显存MBR</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#mbr%E4%B9%8Bcan-can-need-%E7%A1%AC%E7%9B%98"><span class="nav-text">mbr之can can need 硬盘</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F"><span class="nav-text">保护模式</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%AE%B5%E6%8F%8F%E8%BF%B0%E7%AC%A6"><span class="nav-text">段描述符</span></a></li></ol></li></ol></li></ol>
     </div>
 </div>
 
