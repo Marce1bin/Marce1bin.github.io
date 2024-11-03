@@ -291,7 +291,7 @@
 
             <span class="meta-info-item post-update-date">
                 <i class="icon fa-solid fa-file-pen"></i>&nbsp;
-                <span class="datetime" data-updated="Mon Nov 04 2024 00:36:47 GMT+0800">2024-11-04 00:36:47</span>
+                <span class="datetime" data-updated="Mon Nov 04 2024 00:38:33 GMT+0800">2024-11-04 00:38:33</span>
             </span>
         
 
@@ -457,12 +457,12 @@
 <p>真好。绿底的2 loader不断闪动，就像20世纪的单机游戏通关彩蛋一样。</p>
 <h2 id="保护模式"><a href="#保护模式" class="headerlink" title="保护模式"></a>保护模式</h2><p>之前我们都是在实模式上学习和实践的，对标的就是8086处理器，16位，段寄存器+偏移寄存器寻址，但是实模式没有权限的概念，操作系统能到的内存用户也能到，安全性比较差，而且一次性只能运行一个程序，最大内存也只有1mb，所以之后出现了平坦模式，用一个32位寄存器就能寻址所有的地址，还有保护模式，寄存器增宽，使用段描述符寻址。但是由于兼容的原因，所以会出现16bit和32bit操作的相互转换，就是反转前缀，0x66和0x67，这里不多说。</p>
 <h3 id="段描述符"><a href="#段描述符" class="headerlink" title="段描述符"></a>段描述符</h3><p>为了区别各个内存片段之间的特征和权限，比如代码段就可读可执行不可写，数据段就可读可写不可执行，我们需要给各个内存段一点空间描述它的级别、大小之类的约束属性。，这就是段描述符</p>
-<p><img   src="C:\Users\彬彬\Desktop\HEXO-blog\source_posts\操作系统啥啥啥的\image-20241104000807505.png"  alt="image-20241104000807505"></p>
+<p><img   src="/2024/10/31/%E7%BD%91%E9%BC%8E%E6%9D%AFpwn4%E5%A4%8D%E7%8E%B0/mage-20241104000807505.png"  alt="image-20241104000807505"></p>
 <p>这样的一个段描述符一共8字节，这本书提到的各类描述符都是8字节。</p>
 <p>首先能注意到段基址和段界限，保护模式下地址总线宽度32位，所以必须要32位来描述这个段的位置，就是段基址，但是你会发现这32位段基址居然还不在一起，历史遗留问题。</p>
 <p>段界限就是这个段最大有多大，假如在这个段中访问的位置超过了段基址+段界限，那么就会触发异常。同时对于数据段和代码段，数据往高的内存地址增长，对于栈，数据往低的内存地址增长，相对应的段界限计算也不同。你可能还会注意到，段界限也是分散的。实际上还有一个G位和段界限有关系，如果G位是0，那么段边界就是段基址+段界限，如果是1，就是段基址+段界限*4kb</p>
 <p>对于高32位来说，首先S为0代表该段为系统段，为1就是数据段。根据S代表不同的系统与数据段，占4位的type会代表的段类型也会不同，详细如下</p>
-<p><img   src="C:\Users\彬彬\Desktop\HEXO-blog\source_posts\操作系统啥啥啥的\image-20241104001819172.png"  alt="image-20241104001819172"></p>
+<p><img   src="/2024/10/31/%E7%BD%91%E9%BC%8E%E6%9D%AFpwn4%E5%A4%8D%E7%8E%B0/mage-20241104001819172.png"  alt="image-20241104001819172"></p>
 <p>书中主要说明了非系统段的type作用，RC位代表的读写执行是不是有种熟悉的感觉……</p>
 <p>X代表代码段或数据段，代码段不可写，数据段不可执行。A由cpu设置，代表有没有被cpu访问过，如果有就置1。C代表一致性代码段，，，</p>
 <blockquote>
@@ -584,6 +584,22 @@
                 
                     <div class="post-nav border-box">
                         
+                            <div class="prev-post">
+                                <a class="prev"
+                                   rel="prev"
+                                   href="/2024/11/04/%E5%A5%87%E5%A6%99%E5%86%92%E9%99%A9%E4%B9%8B%E4%B8%80/"
+                                   title="奇妙冒险之一"
+                                >
+                                    <span class="left arrow-icon flex-center">
+                                        <i class="fas fa-chevron-left"></i>
+                                    </span>
+                                    <span class="title flex-center">
+                                        <span class="post-nav-title-item text-ellipsis">奇妙冒险之一</span>
+                                        <span class="post-nav-item">上一篇</span>
+                                    </span>
+                                </a>
+                            </div>
+                        
                         
                             <div class="next-post">
                                 <a class="next"
@@ -655,7 +671,7 @@
             
                 <span class="count-item border-box word">
                     <span class="item-type border-box">总字数</span>
-                    <span class="item-value border-box word">8.6k</span>
+                    <span class="item-value border-box word">9.6k</span>
                 </span>
             
 
