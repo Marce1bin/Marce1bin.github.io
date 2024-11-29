@@ -291,7 +291,7 @@
 
             <span class="meta-info-item post-update-date">
                 <i class="icon fa-solid fa-file-pen"></i>&nbsp;
-                <span class="datetime" data-updated="Fri Nov 08 2024 01:25:24 GMT+0800">2024-11-08 01:25:24</span>
+                <span class="datetime" data-updated="Fri Nov 08 2024 23:52:16 GMT+0800">2024-11-08 23:52:16</span>
             </span>
         
 
@@ -373,7 +373,7 @@
 <p>值得注意的是，在dl_fini中遍历模块的时候每个模块都会先执行一个上锁函数，这个很重要，记下来要考</p>
 <p>rtld_global的结构也是重量级，自上而下就是命名空间结构体数组到模块链表到节描述符</p>
 <p>前面说了_dl_fini就是通过rtld_global来找到各个模块的fini_array节的，接着就调用其中的析构函数指针</p>
-<h3 id="归纳一下"><a href="#归纳一下" class="headerlink" title="归纳一下"></a>归纳一下</h3><p>动态链接需要映射共享片段到进程空间内，动态链接器ld.so会通过dl_open()执行这一过程，同时将所有映射的文件（就是模块）记录到结构体***<u><em>rtdl_global</u>***中，他就是我们利用的关键。_rtdl_global中有一个命名空间结构体数组</em>_<em><strong><u>link_namespaces</u></strong></em>__，每个命名空间结构体数组中有一个描述模块的结构体链表*<u><strong>link_map</strong></u><em>，每个节点中有一个节描述符数组</em><em><u><em>Elf64_Dyn</em></u><strong>，从中就能找到保存析构函数指针数组的节描述符</strong></em><u>fini_array</u>***，在进程结束时ld.so会通过dl_fini()从rtdl_global开始一路找到fini_array，最终执行其中的析构函数</p>
+<h3 id="归纳一下"><a href="#归纳一下" class="headerlink" title="归纳一下"></a>归纳一下</h3><p>动态链接需要映射共享片段到进程空间内，动态链接器ld.so会通过dl_open()执行这一过程，同时将所有映射的文件（就是模块）记录到结构体***<u><em>rtdl_global</u>***中，他就是我们利用的关键。_rtdl_global中有一个命名空间结构体数组</em>_<em><strong><u>link_namespaces</u></strong></em>__，每个命名空间结构体数组中有一个描述模块的结构体链表*<u><strong>link_map</strong></u><em>，每个节点中有一个节描述符数组</em>*<u><em>Elf64_Dyn</em></u>**，从中就能找到保存析构函数指针数组的节描述符fini_array，在进程结束时ld.so会通过dl_fini()从rtdl_global开始一路找到fini_array，最终执行其中的析构函数</p>
 <p>然而不同于exit_funcs()，rtdl_global在遍历时没有经过加密，如果我们能修改其上的内容就可以成功劫持析构函数，执行我们自己的函数</p>
 <h2 id="从理论到实践"><a href="#从理论到实践" class="headerlink" title="从理论到实践"></a>从理论到实践</h2><h3 id="exit-hook——劫持上锁解锁函数-libc-atexit"><a href="#exit-hook——劫持上锁解锁函数-libc-atexit" class="headerlink" title="exit_hook——劫持上锁解锁函数 ||  __libc_atexit"></a>exit_hook——劫持上锁解锁函数 ||  __libc_atexit</h3><p>前面提到过，ld_fini在遍历模块的时候都要先”上锁“，以免和其他进程竞争</p>
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">__rtld_lock_lock_recursive(GL(dl_load_lock)); <span class="comment">//对rtld_global上锁</span></span><br></pre></td></tr></table></figure>
@@ -577,7 +577,7 @@
             
                 <span class="count-item border-box word">
                     <span class="item-type border-box">总字数</span>
-                    <span class="item-value border-box word">17.3k</span>
+                    <span class="item-value border-box word">21.4k</span>
                 </span>
             
 
