@@ -353,7 +353,7 @@
                          <h1 id="32位操作系统——《操作系统真象还原》"><a href="#32位操作系统——《操作系统真象还原》" class="headerlink" title="32位操作系统——《操作系统真象还原》"></a>32位操作系统——《操作系统真象还原》</h1><p>操作系统真相还原:-)，9月份开始念拖到现在，抽出空闲时间尽量做吧。</p>
 <h2 id="BIOS-中断实现MBR"><a href="#BIOS-中断实现MBR" class="headerlink" title="BIOS &amp; 中断实现MBR"></a>BIOS &amp; 中断实现MBR</h2><p>BIOS是计算机上第一个运行的软件，由只读存储器ROM加载。程序通电后cs:ip寄存器强制初始化为0xf000:0xfff0，就是地址0xffff0，这段代码会跳转到0xfeb50处，就是BIOS代码真正开始的地方。BIOS会检查外设信息、初始化硬件、引导加载程序。它的最后一项工作就是校验启动盘里0盘0道1扇区的内容，就是去找主引导记录MBR，确认上去末尾两个字节分别是0x55和0xaa后就表明该扇区是可加载的程序。</p>
 <p>MBR用来引导操作系统，在被确认可引导后会被加载到物理地址0x7c00的位置（为什么是这个位置是个历史遗留问题），然后BIOS跳转到这个位置。mbr是干嘛的？</p>
-<p><img   src="/2024/10/31/%E7%BD%91%E9%BC%8E%E6%9D%AFpwn4%E5%A4%8D%E7%8E%B0/mage-20241101091323904.png"  alt="image-20241101091323904"></p>
+<p><img   src="/2024/11/01/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%95%A5%E5%95%A5%E5%95%A5%E7%9A%84/image-20241101091323904.png"  alt="image-20241101091323904"></p>
 <p>然后书上给了个实例汇编代码……用来实现mbr……这应该不是传统意义上的mbr，毕竟他的作用就是清屏、定位光标、打印一行字符串，但是模拟了BIOS启动到加载mbr、运行mbr的过程</p>
 <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line">section MBR vstart=0x7c00</span><br><span class="line">    mov ax, cs</span><br><span class="line">    mov ds, ax</span><br><span class="line">    mov es, ax</span><br><span class="line">    mov ss, ax</span><br><span class="line">    mov fs, ax ;cs为0，为各个寄存器中转赋值</span><br><span class="line">    mov sp, 0x7c00</span><br><span class="line"></span><br><span class="line">    mov ax, 0x600 ;ah功能号=6，向上或向下滚动行，即为清屏，al=0即为全部行</span><br><span class="line">    mov bx, 0x700 ;</span><br><span class="line">    mov cx, 0x0 ;</span><br><span class="line">    mov dx, 0x184f ; 上面三个是参数</span><br><span class="line">    int 0x10 ;显示和视频中断</span><br><span class="line"></span><br><span class="line">    mov ah, 3 ; 获取光标位置</span><br><span class="line">    mov bh, 0 ; 在第一页获取</span><br><span class="line">    int 0x10</span><br><span class="line"></span><br><span class="line">    mov ax, message</span><br><span class="line">    mov bp, ax ;bp是段偏移寄存器，无法mov直接数，所以用ax暂存字符串地址</span><br><span class="line">    </span><br><span class="line">    mov cx, 16 ;串长度</span><br><span class="line">    mov ax, 0x1301 ;ah=13，显示字符及属性，al=1，显示字符串，光标跟随移动</span><br><span class="line">    mov bx, 0x2 ; bh=0，显示页，bl=2，黑底绿字</span><br><span class="line">    int 0x10</span><br><span class="line"></span><br><span class="line">    jmp $ ;$代表当前地址，即无限循环</span><br><span class="line"></span><br><span class="line">    message: db &#x27;Hello, OS world!&#x27;</span><br><span class="line">    times 510-($-$$) db 0 ;填充0，使程序长度为512字节，-($-$$)表示当前地址减去该section的起始地址</span><br><span class="line">    db 0x55, 0xaa ;最后两个字节为可加载标志，0x55, 0xaa，一共512字节</span><br></pre></td></tr></table></figure>
 
@@ -370,10 +370,10 @@
 <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">nasm -o mbr.bin mbr.S</span><br></pre></td></tr></table></figure>
 
 <p>放ida里看一眼，嘿嘿</p>
-<p><img   src="/2024/10/31/%E7%BD%91%E9%BC%8E%E6%9D%AFpwn4%E5%A4%8D%E7%8E%B0/mage-20241101214308685.png"  alt="image-20241101214308685"></p>
+<p><img   src="/2024/11/01/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%95%A5%E5%95%A5%E5%95%A5%E7%9A%84/image-20241101214308685.png"  alt="image-20241101214308685"></p>
 <p>在偏移0x21的地方是汇编指令“mov     ax, 7C33h”，对应源码中的“mov ax, message”，而起始虚拟地址为0x7c00的条件下message的偏移确为0x7c33，所以程序确是以0x7c00为起始编址</p>
 <p>不能直接.&#x2F;mbr.bin运行（蠢比），需要BIOS引导</p>
-<p><img   src="/2024/10/31/%E7%BD%91%E9%BC%8E%E6%9D%AFpwn4%E5%A4%8D%E7%8E%B0/mage-20241101094946304.png"  alt="image-20241101094946304"></p>
+<p><img   src="/2024/11/01/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%95%A5%E5%95%A5%E5%95%A5%E7%9A%84/image-20241101094946304.png"  alt="image-20241101094946304"></p>
 <p>这么来看必须要在我的wsl上搞一个虚拟环境了。。。</p>
 <p>————————————————————————————————————————————————————————————</p>
 <h3 id="安装bochs报错解决"><a href="#安装bochs报错解决" class="headerlink" title="安装bochs报错解决"></a>安装bochs报错解决</h3><p>跟着书上的步骤安装bochs，再make install步骤中可能会报错：</p>
@@ -392,21 +392,21 @@
 <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">bin/bximage -hd -mode=<span class="string">&quot;flat&quot;</span> -size=60 -q hd60M.img</span><br></pre></td></tr></table></figure>
 
 <p>然后使用磁盘操作命令dd将我们的二进制文件mbr.bin数据输入到这个虚拟硬盘里：</p>
-<p><img   src="/2024/10/31/%E7%BD%91%E9%BC%8E%E6%9D%AFpwn4%E5%A4%8D%E7%8E%B0/mage-20241105002840076.png"  alt="image-20241105002840076"></p>
+<p><img   src="/2024/11/01/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%95%A5%E5%95%A5%E5%95%A5%E7%9A%84/image-20241105002840076.png"  alt="image-20241105002840076"></p>
 <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">dd</span> <span class="keyword">if</span>=/home/marcel/OS/mbr.bin of=/home/marcel/OS/bochs/hd60M.img bs=512 count=1 conv=notrunc</span><br></pre></td></tr></table></figure>
 
 <p>​	启动bochs，6，回车，c（和gdb一样的命令）启动</p>
-<p><img   src="/2024/10/31/%E7%BD%91%E9%BC%8E%E6%9D%AFpwn4%E5%A4%8D%E7%8E%B0/mage-20241101210256854.png"  alt="image-20241101210256854"></p>
+<p><img   src="/2024/11/01/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%95%A5%E5%95%A5%E5%95%A5%E7%9A%84/image-20241101210256854.png"  alt="image-20241101210256854"></p>
 <p>打印出来了一行绿色的字，从初始的回显可以看出起始地址在0xffff0，然后跳转到0xfe05b的位置，就是BIOS的起始地址，然后BIOS巴拉巴拉……最终检测到0盘0道1扇区末尾有魔数0x55aa，直接跳转到0x7c00的位置，执行了我们自己写的mbr。</p>
 <p>再小小改进一下……</p>
 <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br></pre></td><td class="code"><pre><span class="line">section MBR vstart=0x7c00</span><br><span class="line">    mov ax, cs</span><br><span class="line">    mov ds, ax</span><br><span class="line">    mov es, ax</span><br><span class="line">    mov ss, ax</span><br><span class="line">    mov fs, ax</span><br><span class="line">    mov sp, 0x7c00 ;设置段寄存器</span><br><span class="line"></span><br><span class="line">    mov ax, 0x600 ;ah功能号=6，向上或向下滚动行，al=0即为全部行，即为清屏</span><br><span class="line">    mov bx, 0x700 ;</span><br><span class="line">    mov cx, 0x0 ;</span><br><span class="line">    mov dx, 0x184f ; 上面三个是参数</span><br><span class="line">    int 0x10 ;显示和视频中断</span><br><span class="line"></span><br><span class="line">    mov ah, 3 ; 获取光标位置</span><br><span class="line">    mov bh, 0 ; 在第一页获取</span><br><span class="line">    int 0x10</span><br><span class="line"></span><br><span class="line">    mov ax, message</span><br><span class="line">    mov bp, ax ;bp是段偏移寄存器，无法mov直接数，所以用ax暂存字符串地址</span><br><span class="line">    </span><br><span class="line">    mov cx, 8 ;循环8次</span><br><span class="line">    mov ax, 0x1301 ;ah=13，显示字符及属性，al=1，显示字符串，光标跟随移动</span><br><span class="line">    mov bx, 0x0 ; bh=0，显示页</span><br><span class="line">    mov dl, 0 ;从0列开始</span><br><span class="line">    mov dh, 0 ;从0行开始</span><br><span class="line"></span><br><span class="line">puts_8:</span><br><span class="line">    push cx ;保存cx</span><br><span class="line">    mov cx, 0x10 ;每次打印16字符</span><br><span class="line">    int 0x10</span><br><span class="line">    inc bl ;每次循环属性+1，打印出彩色</span><br><span class="line">    inc dh ;行+1</span><br><span class="line">    pop cx</span><br><span class="line">    loop puts_8</span><br><span class="line"></span><br><span class="line">    jmp $ ;$代表当前地址，即无限循环</span><br><span class="line"></span><br><span class="line">    message: db &#x27;Hello, OS world!&#x27;</span><br><span class="line">    times 510-($-$$) db 0 ;填充0，使程序长度为512字节，-($-$$)表示当前地址减去该section的起始地址</span><br><span class="line">    db 0x55, 0xaa ;最后两个字节为可加载标志，0x55, 0xaa，一共512字节</span><br></pre></td></tr></table></figure>
 
-<p><img   src="/2024/10/31/%E7%BD%91%E9%BC%8E%E6%9D%AFpwn4%E5%A4%8D%E7%8E%B0/mage-20241102185546245.png"  alt="image-20241102185546245"></p>
+<p><img   src="/2024/11/01/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%95%A5%E5%95%A5%E5%95%A5%E7%9A%84/image-20241102185546245.png"  alt="image-20241102185546245"></p>
 <p>Hello, OS world!</p>
 <p>始于足下。</p>
 <h2 id="mbr硬件♂交互"><a href="#mbr硬件♂交互" class="headerlink" title="mbr硬件♂交互"></a>mbr硬件♂交互</h2><h3 id="一点点汇编-硬件补充"><a href="#一点点汇编-硬件补充" class="headerlink" title="一点点汇编&amp;硬件补充"></a>一点点汇编&amp;硬件补充</h3><p>然后的第三章作者用两小节补充了汇编相关的内容。之前有一点点pwn基础，少说也读过（心虚）csapp，所以像看小说一样很轻松的就看完了，包括实模式、地址分段、指令执行、寄存器、栈与相关操作、寻址方式与jmp、call的调用方式、flags寄存器这些内容。巩固了一些知识，也的确有额外的收获：</p>
 <p>在ida反汇编的时候，常常能看到这样的语句：</p>
-<p><img   src="/2024/10/31/%E7%BD%91%E9%BC%8E%E6%9D%AFpwn4%E5%A4%8D%E7%8E%B0/mage-20241102160012693.png"  alt="image-20241102160012693"></p>
+<p><img   src="/2024/11/01/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%95%A5%E5%95%A5%E5%95%A5%E7%9A%84/image-20241102160012693.png"  alt="image-20241102160012693"></p>
 <p>在之前我只是直接理解为他会无条件跳转到0x187a这个位置，short是什么？</p>
 <p>相似的还有这样：</p>
 <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">jmp		near loc_15E3</span><br></pre></td></tr></table></figure>
@@ -424,7 +424,7 @@
 
 <p>与中断实现相比，这一版的代码改变了两处：一处是我们把gs定为显存的段寄存器，把它设为0xb800，实际上[gs:0xab]就是0xb80ab；另一处把通过中断打印的内容改成往显存文本模式内存中写字符显示的数据，就是通过gs寄存器做段寄存器寻址实现的</p>
 <p>然后重新编译，写入虚拟硬盘，启动bochs，看看效果如何：</p>
-<p><img   src="/2024/10/31/%E7%BD%91%E9%BC%8E%E6%9D%AFpwn4%E5%A4%8D%E7%8E%B0/mage-20241102182615336.png"  alt="image-20241102182615336"></p>
+<p><img   src="/2024/11/01/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%95%A5%E5%95%A5%E5%95%A5%E7%9A%84/image-20241102182615336.png"  alt="image-20241102182615336"></p>
 <p>左上角有一个很小的“hello OS”</p>
 <p>实际上它在不断闪烁。</p>
 <h3 id="mbr之can-can-need-硬盘"><a href="#mbr之can-can-need-硬盘" class="headerlink" title="mbr之can can need 硬盘"></a>mbr之can can need 硬盘</h3><p>到现在好像都没做什么实事，但是大的药来了——用mbr读取硬盘内容。</p>
@@ -438,7 +438,7 @@
 <p>只不过还是很有意思的，不通过中断的方式直接和硬件交互的就像不断探索底层，从c到汇编到机械码，从函数调用到中断到硬件交互，就像剥洋葱，如果你愿意一层一层一层一层……</p>
 <p>之前提到过硬件与cpu交互需要媒介，就是所谓的IO接口。硬盘的IO接口就是硬盘控制器，我们读写硬盘就是读写硬盘控制器的端口，而IO接口上的端口就是他的寄存器，换句话说我们读写硬盘、查看硬盘的状态之类的就是和硬盘控制器上的寄存器打交道。</p>
 <p>有很多的硬盘端口……但是我们只用其中的一部分：</p>
-<p><img   src="/2024/10/31/%E7%BD%91%E9%BC%8E%E6%9D%AFpwn4%E5%A4%8D%E7%8E%B0/mage-20241102235426038.png"  alt="image-20241102235426038"></p>
+<p><img   src="/2024/11/01/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%95%A5%E5%95%A5%E5%95%A5%E7%9A%84/image-20241102235426038.png"  alt="image-20241102235426038"></p>
 <p>端口作用在读写时不同，同一个端口在读和写时可能有不同的作用。不用在意通道啥的，就是主盘接口和从盘接口，接下来都一样的</p>
 <p>data寄存器就是管理数据的，可出也可进，既然是闸门必须大，只他一个可以存两个字节大小，其他全是8位寄存器。写硬盘时数据源源不断的送到此端口，硬盘控制器发现里面有内容了就往扇区上写，读硬盘时就是不断读这个寄存器</p>
 <p>error读时记录失败信息，写时存储额外参数</p>
@@ -446,7 +446,7 @@
 <p>接下来三个端口（也是寄存器）用来存储读取或写入的目标硬盘地址。当然可以通过柱面-磁头-扇区的方式来存储硬盘地址，这种存储方式叫做CHS，但是这样mbr又会说看不懂思密达，那就直接简单粗暴的把每个扇区12345地编号，这样就称作LBA。这里的LBA用28位存储一个扇区的地址，low mid high分别对应地址中的低位中位高位，3*8&#x3D;24不是我还有4位呢？</p>
 <p>device出场，他的作用比较杂，首先作为一个8位寄存器它的低4位补齐LBA存储的最后一部分，其次第4位用来表示主盘（0）还是从盘（1），第6位表示LBA模式还是CHS模式，5位和7位都置0</p>
 <p>status寄存器保存各种状态，第0位是ERR位，它是1就去找error寄存器，第3位表示数据是否准备好，第6位表示硬盘是否就绪，第7位表示硬盘是否繁忙。</p>
-<p><img   src="/2024/10/31/%E7%BD%91%E9%BC%8E%E6%9D%AFpwn4%E5%A4%8D%E7%8E%B0/mage-20241103003408263.png"  alt="image-20241103003408263"></p>
+<p><img   src="/2024/11/01/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%95%A5%E5%95%A5%E5%95%A5%E7%9A%84/image-20241103003408263.png"  alt="image-20241103003408263"></p>
 <p>command寄存器可以识别很多指令，这是其中三个：</p>
 <ol>
 <li>0xec，硬盘识别</li>
@@ -467,16 +467,16 @@
 
 <p>写入虚拟硬盘中的时候seek&#x3D;2，意思就是跳过两个块，在第二扇区</p>
 <p>启动bochs，如果一切顺利，mbr将把第二扇区上的数据读取到0x900地址上并跳转到那里，往显存上写入2 loader这几个字符并出现在窗口上</p>
-<p><img   src="/2024/10/31/%E7%BD%91%E9%BC%8E%E6%9D%AFpwn4%E5%A4%8D%E7%8E%B0/mage-20241103015448849.png"  alt="image-20241103015448849"></p>
+<p><img   src="/2024/11/01/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%95%A5%E5%95%A5%E5%95%A5%E7%9A%84/image-20241103015448849.png"  alt="image-20241103015448849"></p>
 <p>真好。绿底的2 loader不断闪动，就像20世纪的单机游戏通关彩蛋一样。</p>
 <h2 id="保护模式"><a href="#保护模式" class="headerlink" title="保护模式"></a>保护模式</h2><p>之前我们都是在实模式上学习和实践的，对标的就是8086处理器，16位，段寄存器+偏移寄存器寻址，但是实模式没有权限的概念，操作系统能到的内存用户也能到，安全性比较差，而且一次性只能运行一个程序，最大内存也只有1mb，所以之后出现了平坦模式，用一个32位寄存器就能寻址所有的地址，还有保护模式，寄存器增宽，使用段描述符寻址。但是由于兼容的原因，所以会出现16bit和32bit操作的相互转换，就是反转前缀，0x66和0x67，这里不多说。</p>
 <h3 id="段描述符"><a href="#段描述符" class="headerlink" title="段描述符"></a>段描述符</h3><p>为了区别各个内存片段之间的特征和权限，比如代码段就可读可执行不可写，数据段就可读可写不可执行，我们需要给各个内存段一点空间描述它的级别、大小之类的约束属性。，这就是段描述符</p>
-<p><img   src="/2024/10/31/%E7%BD%91%E9%BC%8E%E6%9D%AFpwn4%E5%A4%8D%E7%8E%B0/mage-20241104000807505.png"  alt="image-20241104000807505"></p>
+<p><img   src="/2024/11/01/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%95%A5%E5%95%A5%E5%95%A5%E7%9A%84/image-20241104000807505.png"  alt="image-20241104000807505"></p>
 <p>这样的一个段描述符一共8字节，这本书提到的各类描述符都是8字节。</p>
 <p>首先能注意到段基址和段界限，保护模式下地址总线宽度32位，所以必须要32位来描述这个段的位置，就是段基址，但是你会发现这32位段基址居然还不在一起，历史遗留问题。</p>
 <p>段界限就是这个段最大有多大，假如在这个段中访问的位置超过了段基址+段界限，那么就会触发异常。同时对于数据段和代码段，数据往高的内存地址增长，对于栈，数据往低的内存地址增长，相对应的段界限计算也不同。你可能还会注意到，段界限也是分散的。实际上还有一个G位和段界限有关系，如果G位是0，那么段边界就是段基址+段界限，如果是1，就是段基址+段界限*4kb</p>
 <p>对于高32位来说，首先S为0代表该段为系统段，为1就是数据段。根据S代表不同的系统与数据段，占4位的type会代表的段类型也会不同，详细如下</p>
-<p><img   src="/2024/10/31/%E7%BD%91%E9%BC%8E%E6%9D%AFpwn4%E5%A4%8D%E7%8E%B0/mage-20241104001819172.png"  alt="image-20241104001819172"></p>
+<p><img   src="/2024/11/01/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%95%A5%E5%95%A5%E5%95%A5%E7%9A%84/image-20241104001819172.png"  alt="image-20241104001819172"></p>
 <p>书中主要说明了非系统段的type作用，RC位代表的读写执行是不是有种熟悉的感觉……</p>
 <p>X代表代码段或数据段，代码段不可写，数据段不可执行。A由cpu设置，代表有没有被cpu访问过，如果有就置1。C代表一致性代码段，，，</p>
 <blockquote>
@@ -492,10 +492,10 @@
 <p>G字段，用来指定段界限的单位，1字节或者4kb，前文已述。</p>
 <p>对于系统段中的描述符，之后讲到中断再展开。</p>
 <h3 id="描述符表及选择子"><a href="#描述符表及选择子" class="headerlink" title="描述符表及选择子"></a>描述符表及选择子</h3><p>段描述符放在哪里？全局描述符表。</p>
-<p><img   src="/2024/10/31/%E7%BD%91%E9%BC%8E%E6%9D%AFpwn4%E5%A4%8D%E7%8E%B0/mage-20241104104639979.png"  alt="image-20241104104639979"></p>
+<p><img   src="/2024/11/01/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%95%A5%E5%95%A5%E5%95%A5%E7%9A%84/image-20241104104639979.png"  alt="image-20241104104639979"></p>
 <p>全局描述符表（GDT）就是一个大数组，它存在于内存中，位置由一个48位的大寄存器GDTR保存。GDTR的前16位像段描述符一样表示全局描述符表的界限，只不过单位就是字节，以此可以计算出全局描述符表最多可容纳2^16&#x2F;8&#x3D;8192个描述符；16-47位表示他在内存中的地址，32位对应总线长度。需要时通过lgdt指令和内存中的gdt_ptr初始化并加载gdt</p>
 <p>那么GDTR通过什么连接全局描述符表呢呢？选择子。</p>
-<p><img   src="/2024/10/31/%E7%BD%91%E9%BC%8E%E6%9D%AFpwn4%E5%A4%8D%E7%8E%B0/mage-20241104104654605.png"  alt="image-20241104104654605"></p>
+<p><img   src="/2024/11/01/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%95%A5%E5%95%A5%E5%95%A5%E7%9A%84/image-20241104104654605.png"  alt="image-20241104104654605"></p>
 <p>选择子用来确认段描述符，每个选择子16位，位于内存中。它的作用相当于段基址寄存器：偏移地址寄存器中的段寄存器（其实作用还要多一点），也有一点区别，他存放的不是段基址，而是索引值。索引值就是该段在GDT或者LDT（局部描述符表）描述符数组中的下标，2^12&#x3D;8192，与最多存放的描述符数量对应。TI用来指示实在GDT还是LDT中。RPL的作用类似于前文提到过的DPL，表示0、1、2、3四个特权级。</p>
 <p>但是每次访问段描述符都很耗费时间，所以当段基址，不对，此处应当说段描述符没有改变时就用一个段描述符缓冲寄存器存储段描述符，每次访问相同的段时就直接读取该段对应的段描述符缓冲寄存器。虽然段描述符缓冲寄存器是保护模式下的产物，但它也可以用在实模式下，为什么要提及这一点呢？之后在实现保护模式的时候涉及流水线刷新的时候我们再详谈</p>
 <p>原文举出的例子很生动</p>
@@ -525,22 +525,22 @@
 <p>从实际代码我们可以看出来，选择子和初始化GDTR寄存器的gdt_ptr都预先写好在内存中，选择子的下标分别对应全局段描述符表中的code、data和video，同时结合头文件的信息会发现栈地址就是数据段基址，而且这里栈描述符中规定栈是向高地址增长的——很违反直觉，之前我在pwn里接触过的elf可重定位文件都是把栈和数据段代码段分开，而且栈是向低地址增长的，这里一并写作数据段了，是为了图方便。</p>
 <p>但是结合boot.inc来看，书中原文的VEDIO_DSC的基址定在了0x8000处而不是0xb8000处（DESC_LIMIT_VIDEO2和DATA_STACK_DESC，这样真的能把选择子对应的地址定位到显存中吗？</p>
 <p>还有一件事！</p>
-<p><img   src="/2024/10/31/%E7%BD%91%E9%BC%8E%E6%9D%AFpwn4%E5%A4%8D%E7%8E%B0/mage-20241105000829590.png"  alt="image-20241105000829590"></p>
+<p><img   src="/2024/11/01/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%95%A5%E5%95%A5%E5%95%A5%E7%9A%84/image-20241105000829590.png"  alt="image-20241105000829590"></p>
 <p>就在这里，将mbr.S这个片段中记录待读入扇区的寄存器cx也改为4，再重新编译、写入虚拟磁盘，原因同样是读入的硬盘扇区数增加了，不然的话被加载的程序不全，cpu会执行一些奇奇怪怪的代码</p>
 <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">nasm -o mbr1.bin mbr1.S</span><br><span class="line"><span class="built_in">dd</span> <span class="keyword">if</span>=./mbr1.bin of=./hd60M.img bs=512 count=1 conv=notrunc</span><br></pre></td></tr></table></figure>
 
 <p>看看成果：</p>
-<p><img   src="/2024/10/31/%E7%BD%91%E9%BC%8E%E6%9D%AFpwn4%E5%A4%8D%E7%8E%B0/mage-20241105005603980.png"  alt="image-20241105005603980"></p>
+<p><img   src="/2024/11/01/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%95%A5%E5%95%A5%E5%95%A5%E7%9A%84/image-20241105005603980.png"  alt="image-20241105005603980"></p>
 <p>通过creg命令查看控制寄存器，PE字段的确被设为了1，我们成功进入了保护模式</p>
-<p><img   src="/2024/10/31/%E7%BD%91%E9%BC%8E%E6%9D%AFpwn4%E5%A4%8D%E7%8E%B0/mage-20241105003936048.png"  alt="image-20241105003936048"></p>
+<p><img   src="/2024/11/01/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%95%A5%E5%95%A5%E5%95%A5%E7%9A%84/image-20241105003936048.png"  alt="image-20241105003936048"></p>
 <h4 id="哪里有问题？"><a href="#哪里有问题？" class="headerlink" title="哪里有问题？"></a>哪里有问题？</h4><p>但是这样其实是有问题的，你会发现我们步入保护模式后往显存上写的’p’字符并没有展现到屏幕上。现在程序已经进入jmp -2的死循环，左下角也打印出了2 loader in real，可见已经完全将loader加载进了内存并且初始化了GDTR寄存器，现在ctrl+c打断程序，再使用命令info gdt查看肯定就可以全局段描述符到实际的地址：</p>
-<p><img   src="/2024/10/31/%E7%BD%91%E9%BC%8E%E6%9D%AFpwn4%E5%A4%8D%E7%8E%B0/mage-20241105003901337.png"  alt="image-20241105003901337"></p>
+<p><img   src="/2024/11/01/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%95%A5%E5%95%A5%E5%95%A5%E7%9A%84/image-20241105003901337.png"  alt="image-20241105003901337"></p>
 <p>以上所有步骤我都是照抄书本原文代码，差别只在于我自己重写了注释或者改变了输出，你可以看到下标为3的GDT，对应着我们原本预想的显存段，实际地址是0x8000而不是0xb8000！</p>
 <p>一开始我通读boot.inc的时候就提出了疑问：DESC_VIDEO_HIGH4的最后8位，对应段基地址的16-24位为0，再结合loader1.S中VIDEO段的低16位是0x8000，得到的只有0x8000而不是0xb8000。不知道这的确是书中的错漏还是我忽略了书中的某些内容，但是照抄源码会导致显存段的地址错误，要是想把最后的p打印出来，必须要设置boot.inc中DESC_VIDEO_HIGH4最后一个字节为b</p>
 <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">DESC_VIDEO_HIGH4 equ (0x00 &lt;&lt; 24) + DESC_G_4K + DESC_D_32 + \</span><br><span class="line">DESC_L + DESC_AVL + DESC_LIMIT_VIDEO2 + DESC_P + DESC_DPL_0 + \</span><br><span class="line">DESC_S_DATA + DESC_TYPE_DATA + 0x0b</span><br></pre></td></tr></table></figure>
 
 <p>重新编译，写入虚拟硬盘再启动，可以看到：</p>
-<p><img   src="/2024/10/31/%E7%BD%91%E9%BC%8E%E6%9D%AFpwn4%E5%A4%8D%E7%8E%B0/mage-20241105005759255.png"  alt="image-20241105005759255"></p>
+<p><img   src="/2024/11/01/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%95%A5%E5%95%A5%E5%95%A5%E7%9A%84/image-20241105005759255.png"  alt="image-20241105005759255"></p>
 <p>小p被打印出来了，这印证了我的猜想，也证明了我们的确进入了保护模式，段寄存器通过选择子找到全局段描述符表中显存的实际地址并成功写入。</p>
 <p>也不枉我一行一行对着代码确认，这段时间看书还是很用心仔细的（挺胸</p>
 <p>如果当初没发现这个错误，最快的找出错误的方法也是查看段描述符表对应的显存地址是否有误，如果有误再去溯源段描述符表上段基址的设置，最终还是能够找到boot.inc中最后的那个字节，这是后话。</p>
@@ -569,27 +569,27 @@
 <h4 id="中断0x15获取内存"><a href="#中断0x15获取内存" class="headerlink" title="中断0x15获取内存"></a>中断0x15获取内存</h4><p>如前所述，中断0x10主要和显示相关，内存获取则可以通过中断0x15的三个子功能决定。和之前相同，他们的功能号需要放在寄存器eax中。</p>
 <p>虽然说进入了保护模式就没办法BIOS中断了，但我们还是做做样子。</p>
 <h5 id="EAX-0xE820"><a href="#EAX-0xE820" class="headerlink" title="EAX&#x3D;0xE820"></a>EAX&#x3D;0xE820</h5><p>0xE820是最灵活的中断内存获取方式，不仅能获取内存容量，还能获取内存布局。它返回的数据是一种叫做地址范围描述符的结构：</p>
-<p><img   src="/2024/10/31/%E7%BD%91%E9%BC%8E%E6%9D%AFpwn4%E5%A4%8D%E7%8E%B0/mage-20241106010043887.png"  alt="image-20241106010043887"></p>
-<p><img   src="/2024/10/31/%E7%BD%91%E9%BC%8E%E6%9D%AFpwn4%E5%A4%8D%E7%8E%B0/mage-20241106010057261.png"  alt="image-20241106010057261"></p>
+<p><img   src="/2024/11/01/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%95%A5%E5%95%A5%E5%95%A5%E7%9A%84/image-20241106010043887.png"  alt="image-20241106010043887"></p>
+<p><img   src="/2024/11/01/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%95%A5%E5%95%A5%E5%95%A5%E7%9A%84/image-20241106010057261.png"  alt="image-20241106010057261"></p>
 <p>调用中断就需要传入参数：</p>
-<p><img   src="/2024/10/31/%E7%BD%91%E9%BC%8E%E6%9D%AFpwn4%E5%A4%8D%E7%8E%B0/mage-20241106010255407.png"  alt="image-20241106010255407"></p>
-<p><img   src="/2024/10/31/%E7%BD%91%E9%BC%8E%E6%9D%AFpwn4%E5%A4%8D%E7%8E%B0/mage-20241127003010285.png"  alt="image-20241127003010285"></p>
+<p><img   src="/2024/11/01/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%95%A5%E5%95%A5%E5%95%A5%E7%9A%84/image-20241106010255407.png"  alt="image-20241106010255407"></p>
+<p><img   src="/2024/11/01/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%95%A5%E5%95%A5%E5%95%A5%E7%9A%84/image-20241127003010285.png"  alt="image-20241127003010285"></p>
 <h5 id="EAX-0xE801"><a href="#EAX-0xE801" class="headerlink" title="EAX&#x3D;0xE801"></a>EAX&#x3D;0xE801</h5><p>这种方法只能获取内存大小，最大只能识别4GB的内存的同时，内存大小的表达方式也……颇具特色</p>
-<p><img   src="/2024/10/31/%E7%BD%91%E9%BC%8E%E6%9D%AFpwn4%E5%A4%8D%E7%8E%B0/mage-20241106010652359.png"  alt="image-20241106010652359"></p>
+<p><img   src="/2024/11/01/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%95%A5%E5%95%A5%E5%95%A5%E7%9A%84/image-20241106010652359.png"  alt="image-20241106010652359"></p>
 <p>比较鬼畜的是返回的内存容量通过四个寄存器存储，而且两两一样……</p>
 <p>计算方法是：</p>
 <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">AX*1024+BX*64*1024+1MB</span><br></pre></td></tr></table></figure>
 
 <p>而且实际计算出的内存大小要+1mb才等于实际的内存大小</p>
 <h5 id="AX-0x88"><a href="#AX-0x88" class="headerlink" title="AX&#x3D;0x88"></a>AX&#x3D;0x88</h5><p>这种方式最简陋，只能识别最大64MB的内存大小，大于64就只显示63</p>
-<p><img   src="/2024/10/31/%E7%BD%91%E9%BC%8E%E6%9D%AFpwn4%E5%A4%8D%E7%8E%B0/mage-20241106011054251.png"  alt="image-20241106011054251"></p>
+<p><img   src="/2024/11/01/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%95%A5%E5%95%A5%E5%95%A5%E7%9A%84/image-20241106011054251.png"  alt="image-20241106011054251"></p>
 <h5 id="代码-实践"><a href="#代码-实践" class="headerlink" title="代码 &amp;&amp; 实践"></a>代码 &amp;&amp; 实践</h5><p>mbr.S和之前引导加载硬盘的部分一样，这里就补上loader.S</p>
 <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br></pre></td><td class="code"><pre><span class="line">%include &quot;boot.inc&quot;</span><br><span class="line">section loader vstart=LOADER_BASE_ADDR</span><br><span class="line">LOADER_STAK_TOP equ LOADER_BASE_ADDR</span><br><span class="line"></span><br><span class="line">jmp loader_start </span><br><span class="line"></span><br><span class="line">;GDT描述符</span><br><span class="line">GDT_BASE: dd 0x00000000</span><br><span class="line">        dd 0x00000000 ;第一个描述符置空，选择子有检查需要导致0下表对应的描述符没用</span><br><span class="line">CODE_DESC: dd 0x0000ffff ;界限</span><br><span class="line">        dd DESC_CODE_HIGH4</span><br><span class="line">DATA_STACK_DESC: dd 0x0000ffff ;界限</span><br><span class="line">        dd DESC_DATA_HIGH4</span><br><span class="line"></span><br><span class="line">VIDEO_DESC: dd 0x80000007;单位4kb，界限为7大小即为0x7fff，显存位置从0xb8000开始</span><br><span class="line">        dd DESC_VIDEO_HIGH4</span><br><span class="line"></span><br><span class="line">GDT_SIZE equ $ - GDT_BASE</span><br><span class="line">GDT_LIMIT equ GDT_SIZE-1</span><br><span class="line">times 60 dq 0 ;预留60个描述符的空位，每个描述符8个字节</span><br><span class="line"></span><br><span class="line">total_men_bytes dd 0 ;在内存中地址为0xb00，用来存储内存容量，之后在内核中会用到</span><br><span class="line"></span><br><span class="line">gdt_ptr dw GDT_LIMIT </span><br><span class="line">        dd GDT_BASE ;这就是GDTR寄存器用来加载gdt的地方，界限和起始地址</span><br><span class="line"></span><br><span class="line">ards_buf times 244 db 0 ;人工对齐，从描述符结束至此共256字节，记录ards结构体</span><br><span class="line">ards_nr dw 0;记录ards结构体数量</span><br><span class="line"></span><br><span class="line">loader_start:</span><br><span class="line">    xor ebx, ebx ;ebx第一次调用置零</span><br><span class="line">    mov edx, 0x534d4150 ;校验&#x27;SMAP&#x27;</span><br><span class="line">    mov di,  ards_buf ;返回的结构体通过es:di返回值ards_buf处</span><br><span class="line">    .e820_mem_get_loop:</span><br><span class="line">        mov eax, 0x0000e820  ;子功能号</span><br><span class="line">        mov ecx, 20 ;结构体大小为20字节</span><br><span class="line">        int 0x15</span><br><span class="line">        add di, cx ;每次调用后将返回结构体写入地址增加20字节</span><br><span class="line">        inc word [ards_nr] ;记录数量</span><br><span class="line">        cmp ebx, 0 ;确认是否全部返回完毕</span><br><span class="line">        jne .e820_mem_get_loop</span><br><span class="line">    jmp $</span><br></pre></td></tr></table></figure>
 
 <p>之后编译为.bin文件，写入模拟硬盘</p>
 <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">dd</span> <span class="keyword">if</span>=check_memory/mbr.bin of=hd60M.img bs=512 count=1 conv=notrunc</span><br><span class="line"><span class="built_in">dd</span> <span class="keyword">if</span>=check_memory/loader.bin of=hd60M.img bs=512 count=4 seek=2 conv=notrunc</span><br></pre></td></tr></table></figure>
 
-<p><img   src="/2024/10/31/%E7%BD%91%E9%BC%8E%E6%9D%AFpwn4%E5%A4%8D%E7%8E%B0/mage-20241127184125032.png"  alt="image-20241127184125032"></p>
+<p><img   src="/2024/11/01/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%95%A5%E5%95%A5%E5%95%A5%E7%9A%84/image-20241127184125032.png"  alt="image-20241127184125032"></p>
 <p>成功读入ards</p>
 <h3 id="内存分页"><a href="#内存分页" class="headerlink" title="内存分页"></a>内存分页</h3><h4 id="一级页表"><a href="#一级页表" class="headerlink" title="一级页表"></a>一级页表</h4><p>为什么要用页表？</p>
 <p>在我们潜意识中，程序中的线性地址应该在物理地址中也是线性的——比如有一个程序需要占用0x2000000的内存，实际的物理地址中也需要腾出0x2000000的连续空闲内存来用作该程序的内存，这样不是太麻烦了吗？</p>
@@ -601,7 +601,7 @@
 </blockquote>
 <p>换句话说，单位地址块越大，所需页表项越小。但是这是由CPU规定的，一页大小4KB，2^32&#x2F;(4*2^10)&#x3D;2^20计算可得我们在32位架构下需要2^20个下标，每个下标又需要32位来表示对应的物理地址，也就是4字节，一共4MB来存储页表。</p>
 <p>这样子我们同样可以推出：索引页表下标的方式就是取高20位的地址，对应到相应页表项之后从页表项取出对应的物理地址块的起始点，再将物理地址块加上低12位就可以得到实际的物理地址</p>
-<p><img   src="/2024/10/31/%E7%BD%91%E9%BC%8E%E6%9D%AFpwn4%E5%A4%8D%E7%8E%B0/mage-20241127214236205.png"  alt="image-20241127214236205"></p>
+<p><img   src="/2024/11/01/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%95%A5%E5%95%A5%E5%95%A5%E7%9A%84/image-20241127214236205.png"  alt="image-20241127214236205"></p>
 <p>这你就要问了，那我怎么知道页表地址在哪里呢？</p>
 <p>还记得设置段描述符基址的lgdt命令和gdt_ptr吗？我们需要一个地方在初始化页表的时候保存页表的基址方便索引，只不过这不放在内存中，而是控制寄存器cr3。记得我们之前设置cr0标志进入保护模式吗？cr3和cr0一样，也是控制寄存器。</p>
 <h4 id="二级页表"><a href="#二级页表" class="headerlink" title="二级页表"></a>二级页表</h4><p>以上说的其实是一级页表，现代操作系统普遍使用二级页表。</p>
@@ -610,7 +610,7 @@
 <p>读到这里我自然有一个疑问，不同进程之间不能共用一个页表吗？就像动态链接那样，共享一个内存空间。想象动态链接的区别，库代码一般是只读的，而多个进程之间如果共用一个页表的话可能会导致这个进程访问到另一个进程的地址，这会导致权限和安全问题。</p>
 <p>与一级页表相同，二级页表的每个页目录项对应的页表块都是4kb，页目录表占用的内存空间也一共为4kb，包含1024个页表，4kb*4kb*1024&#x3D;4GB，刚好能表示32位架构中的所有地址。</p>
 <p>前文所述，一级页表的每一个页表项用4字节记录，二级页表的每一个页目录项也一样，然而无论是页表块还是每个页表项对应的内存块都是4kb，实际上完整地存储地址的话32位里面低12位都是0，这自然不会浪费，会被用作记录页表&#x2F;内存块的各种属性</p>
-<p><img   src="/2024/10/31/%E7%BD%91%E9%BC%8E%E6%9D%AFpwn4%E5%A4%8D%E7%8E%B0/mage-20241128192435145.png"  alt="image-20241128192435145"></p>
+<p><img   src="/2024/11/01/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%95%A5%E5%95%A5%E5%95%A5%E7%9A%84/image-20241128192435145.png"  alt="image-20241128192435145"></p>
 <p>和之前的段描述符很相似，也有不少位代表的作用有重合。</p>
 <p>P，存在位，表示是否存在于物理地址位中，如果为0仍然被访问了则会抛出pagefault异常</p>
 <p>RW，1代表可读可写，0代表可读不可写</p>
@@ -624,7 +624,7 @@
 <p>avl，可用位。cpu并不会理会该位的值？</p>
 <p>以上就是页表项具体的存储内容，那么一个虚拟地址是具体如何被寻址的呢？</p>
 <p>一个32位的虚拟地址会被拆分成10+10+12</p>
-<p><img   src="/2024/10/31/%E7%BD%91%E9%BC%8E%E6%9D%AFpwn4%E5%A4%8D%E7%8E%B0/mage-20241128194329773.png"  alt="image-20241128194329773"></p>
+<p><img   src="/2024/11/01/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%95%A5%E5%95%A5%E5%95%A5%E7%9A%84/image-20241128194329773.png"  alt="image-20241128194329773"></p>
 <p>高10位用来索引页目录表中的页表，中10位用来索引页表中对应的物理地址块，得到的物理地址块加上最后的12位偏移得到的就是实际地址。</p>
 <p>启动分页机制，我们需要做三件事：</p>
 <blockquote>
@@ -635,10 +635,10 @@
 </ol>
 </blockquote>
 <p>说到cr0的PG位，上次我们通过设置PE位标志进入保护模式，回顾一下cr0的字段：</p>
-<p><img   src="/2024/10/31/%E7%BD%91%E9%BC%8E%E6%9D%AFpwn4%E5%A4%8D%E7%8E%B0/mage-20241128195252120.png"  alt="image-20241128195252120"></p>
+<p><img   src="/2024/11/01/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%95%A5%E5%95%A5%E5%95%A5%E7%9A%84/image-20241128195252120.png"  alt="image-20241128195252120"></p>
 <p>PG位标志着paging，大概以为通过页表进行虚拟地址寻址。</p>
 <p>同样的，页表基址被放入cr3，单个页表块为4kb，地址对齐的情况下cr3可以留出12位的空间不必用作保存页表基址，当然要物尽其用</p>
-<p><img   src="/2024/10/31/%E7%BD%91%E9%BC%8E%E6%9D%AFpwn4%E5%A4%8D%E7%8E%B0/mage-20241128195618904.png"  alt="image-20241128195618904"></p>
+<p><img   src="/2024/11/01/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%95%A5%E5%95%A5%E5%95%A5%E7%9A%84/image-20241128195618904.png"  alt="image-20241128195618904"></p>
 <p>PWT位和PCD位在之前的页表项已经介绍过了，用于设置高速缓存相关。其他位都没用。</p>
 <h4 id="代码-实践-1"><a href="#代码-实践-1" class="headerlink" title="代码&amp;&amp;实践"></a>代码&amp;&amp;实践</h4><p>首先，我们要做的第一步：初始化页目录表和页表</p>
 <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br></pre></td><td class="code"><pre><span class="line">; loader.S</span><br><span class="line">;之前就是进入保护模式的内容</span><br><span class="line">call setup_page</span><br><span class="line"></span><br><span class="line">sgdt [gdt_ptr] ;页表中会将gdt放在内核的地址空间，也就是3GB以上的地址，先将gdt起始地址和偏移量信息保存到gdt_ptr处</span><br><span class="line">mov ebx, [gdt_ptr+2] ;取得gdt基址</span><br><span class="line">or dword [ebx + 0x18 + 4], 0xc0000000 ;将gdt描述符中视频段（第三个描述符，高4字节）的段基址+0xc0000000</span><br><span class="line"></span><br><span class="line">add dword [gdt_ptr + 2], 0xc0000000 ;将gdt基址设为内核所在的高地址</span><br><span class="line">add esp, 0xc0000000 ;栈指针同样映射到内核地址</span><br><span class="line"></span><br><span class="line">mov eax, PAGE_DIR_TABLE_POS</span><br><span class="line">mov cr3, eax</span><br><span class="line"></span><br><span class="line">;打开cr0的pg位</span><br><span class="line">mov eax, cr0</span><br><span class="line">or eax, 0x80000000</span><br><span class="line">mov cr0, eax</span><br><span class="line"></span><br><span class="line">;开启分页后重新加载gdt基址</span><br><span class="line">lgdt [gdt_ptr]</span><br><span class="line"></span><br><span class="line">mov byte [gs:160], &#x27;V&#x27;</span><br><span class="line">jmp $</span><br><span class="line"></span><br><span class="line">setup_page:</span><br><span class="line">; 将页目录表空间清零</span><br><span class="line">    mov ecx, 4096 ;空间大小4kb，设置循环次数</span><br><span class="line">    mov esi, 0</span><br><span class="line">.clear_page_dir:</span><br><span class="line">    mov byte [PAGE_DIR_TABLE_POS + esi], 0</span><br><span class="line">    inc esi</span><br><span class="line">    loop .clear_page_dir</span><br><span class="line"></span><br><span class="line">;创建页目录表项</span><br><span class="line">.create_pde:</span><br><span class="line">    mov eax, PAGE_DIR_TABLE_POS</span><br><span class="line">    add eax, 0x1000 ;第一个页表位置，紧挨着页目录表</span><br><span class="line">    mov ebx, eax ;为.create_pte做准备</span><br><span class="line">    or eax, PG_US_U | PG_RW_W | PG_P ;设置用户级别，写权限</span><br><span class="line">;将页目录项0和0xc00都设为第一个页表地址，为将地址映射为内核地址做准备    </span><br><span class="line">    mov [PAGE_DIR_TABLE_POS + 0x0], eax</span><br><span class="line">    mov [PAGE_DIR_TABLE_POS + 0xc00], eax; 0xc0000000以上的目录项用于内核空间</span><br><span class="line">    sub eax, 0x1000</span><br><span class="line">    mov [PAGE_DIR_TABLE_POS + 4092], eax ;最后一个目录项即为页目录表的位置</span><br><span class="line">    </span><br><span class="line">;开始建立第一个页表</span><br><span class="line">    mov ecx, 256 ;范围0-256个页表项，一共1M的内存范围</span><br><span class="line">    mov esi, 0</span><br><span class="line">    mov edx, PG_US_U | PG_RW_W | PG_P</span><br><span class="line">.create_pte:</span><br><span class="line">    mov [ebx+esi*4], edx ;此时ebx为页表起始地址</span><br><span class="line">    add edx, 4096 </span><br><span class="line">    inc esi</span><br><span class="line">    loop .create_pte</span><br><span class="line">;建立第二个页表</span><br><span class="line">    mov eax, PAGE_DIR_TABLE_POS</span><br><span class="line">    add eax, 0x2000 ;第二个页表</span><br><span class="line">    or eax, PG_US_U | PG_RW_W | PG_P</span><br><span class="line">    mov ebx, PAGE_DIR_TABLE_POS</span><br><span class="line">    mov ecx, 254 ;范围为目录项769-1022</span><br><span class="line">    mov esi, 769</span><br><span class="line">.create_kernel_pde:</span><br><span class="line">    mov [ebx+esi*4], eax</span><br><span class="line">    inc esi</span><br><span class="line">    add eax, 0x1000</span><br><span class="line">    loop .create_kernel_pde</span><br><span class="line">    ret</span><br></pre></td></tr></table></figure>
@@ -652,21 +652,21 @@
 <p>32位虚拟地址空间一共4GB，用户空间占用了低位的3GB，内核空间占用的3GB以上，对应的0xc0000000-0xffffffff就是第四个1GB内存，对应的就是内核地址起始位置。我们从线性地址转变为分页模式，引入虚拟地址相应的对内核空间内容的寻址也将变为0xc0000000为基址，所以我们需要将页目录表寻址中0xc00下标对应的页表索引设置为0，也就是实际上我们还是不动之前的那些全局描述符表的实际位置，只是寻址目的地产生了改变，我们顺应将页目录表对应的表项改变而已</p>
 <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">dd</span> <span class="keyword">if</span>=paging/mbr of=./hd60M.img bs=512 count=1 conv=notrunc</span><br><span class="line"><span class="built_in">dd</span> <span class="keyword">if</span>=paging/loader of=./hd60M.img  bs=512 count=4 seek=2 conv=notrunc</span><br></pre></td></tr></table></figure>
 
-<p><img   src="/2024/10/31/%E7%BD%91%E9%BC%8E%E6%9D%AFpwn4%E5%A4%8D%E7%8E%B0/mage-20241129155054250.png"  alt="image-20241129155054250"></p>
+<p><img   src="/2024/11/01/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%95%A5%E5%95%A5%E5%95%A5%E7%9A%84/image-20241129155054250.png"  alt="image-20241129155054250"></p>
 <p>一直步进到重新设置lgdt寄存器，确认此时页表模式已经打开，cr3被设置在地址0x100000，gdt寄存器被设置好了，此时我们查看一下页表</p>
-<p><img   src="/2024/10/31/%E7%BD%91%E9%BC%8E%E6%9D%AFpwn4%E5%A4%8D%E7%8E%B0/mage-20241129155257923.png"  alt="image-20241129155257923"></p>
+<p><img   src="/2024/11/01/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%95%A5%E5%95%A5%E5%95%A5%E7%9A%84/image-20241129155257923.png"  alt="image-20241129155257923"></p>
 <p>哦nice，可以看到访问3GB以上内核地址，也就是0xc0000000以上的地址时的确被引导到起始地址了</p>
-<p><img   src="/2024/10/31/%E7%BD%91%E9%BC%8E%E6%9D%AFpwn4%E5%A4%8D%E7%8E%B0/mage-20241129194045906.png"  alt="image-20241129194045906"></p>
+<p><img   src="/2024/11/01/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%95%A5%E5%95%A5%E5%95%A5%E7%9A%84/image-20241129194045906.png"  alt="image-20241129194045906"></p>
 <h4 id="访问页表"><a href="#访问页表" class="headerlink" title="访问页表"></a>访问页表</h4><p>到现在我们已经实现了页表结构并进入了页表模式，也通过访问虚拟地址在屏幕上打印出了“V”。但是页表是一种动态结构，在放入新内存时需要更新对应的虚拟地址映射，在返回硬盘时也要将对应的虚拟地址空间释放，我们除了通过页表的虚拟地址访问物理地址之外，也需要通过虚拟地址访问到页表本身。</p>
 <p>还记得之前在部署几个页目录项时将最后一个页目录项指向了页目录表的起始地址吗？</p>
 <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">mov [PAGE_DIR_TABLE_POS + 4092], eax</span><br></pre></td></tr></table></figure>
 
 <p>这是通过虚拟地址访问页表的关键。对你没听错，页目录表指向页目录表，当通过虚拟地址访问页表时，也就是高10位全为1，此时会将页目录表当作页表使用，所以会有下面这三个奇怪的页表索引：</p>
-<p><img   src="/2024/10/31/%E7%BD%91%E9%BC%8E%E6%9D%AFpwn4%E5%A4%8D%E7%8E%B0/mage-20241129203105324.png"  alt="image-20241129203105324"></p>
+<p><img   src="/2024/11/01/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%95%A5%E5%95%A5%E5%95%A5%E7%9A%84/image-20241129203105324.png"  alt="image-20241129203105324"></p>
 <p>中位为0，访问到的是页目录表的第一项，指向0x101000，中位为0xc00，指向的是内核区域，页目录表仍然指向页表的起始位置0x101000；中位全为1，页目录表的最后一项，又指回来了，页目录表的起始地址0x100000。</p>
 <p>因此高10位全为1时，可以通过0xfffffxxx可以访问到页目录表，xxx为页目录表中的偏移地址；或者通过高10为为0x3ff访问到页表，此时中10位是页表的下表索引而不是偏移地址，低12位是页表偏移地址</p>
 <h4 id="快表TLB"><a href="#快表TLB" class="headerlink" title="快表TLB"></a>快表TLB</h4><p>之前提到过页表会有设置缓存的描述位，如果G位为一就可以在快表TLB中直接取走</p>
-<p><img   src="/2024/10/31/%E7%BD%91%E9%BC%8E%E6%9D%AFpwn4%E5%A4%8D%E7%8E%B0/mage-20241129204958992.png"  alt="image-20241129204958992"></p>
+<p><img   src="/2024/11/01/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%95%A5%E5%95%A5%E5%95%A5%E7%9A%84/image-20241129204958992.png"  alt="image-20241129204958992"></p>
 <p>快表也有一些属性位，RW啥的。</p>
 <p>快表中的缓存更新后对应的数据源也要更新，但是他不是每次一有改变就缓存刷新，也不是定时刷新，而是交给操作系统的开发人员设置。</p>
 <p>TLB对我们不可见，但是可以通过间接的方式更新TLB</p>
