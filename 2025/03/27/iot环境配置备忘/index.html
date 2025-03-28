@@ -291,10 +291,19 @@
 
             <span class="meta-info-item post-update-date">
                 <i class="icon fa-solid fa-file-pen"></i>&nbsp;
-                <span class="datetime" data-updated="Thu Mar 27 2025 21:14:13 GMT+0800">2025-03-27 21:14:13</span>
+                <span class="datetime" data-updated="Fri Mar 28 2025 11:03:54 GMT+0800">2025-03-28 11:03:54</span>
             </span>
         
 
+        
+            <span class="meta-info-item post-category border-box"><i class="icon fas fa-folder"></i>&nbsp;
+                <ul class="post-category-ul">
+                    
+                            <li class="category-item"><a href="/categories/iot/">iot</a></li>
+                        
+                    
+                </ul>
+            </span>
         
 
         
@@ -304,9 +313,6 @@
                             <li class="tag-item"><span class="tag-separator"><i class="icon fas fa-hashtag"></i></span><a href="/tags/iot/">iot</a></li>
                         
                     
-                            <li class="tag-item"><span class="tag-separator"><i class="icon fas fa-hashtag"></i></span><a href="/tags/object-Object/">[object Object]</a></li>
-                        
-                    
                 </ul>
             </span>
         
@@ -314,12 +320,12 @@
         
         
             <span class="meta-info-item post-wordcount">
-                <i class="icon fas fa-file-word"></i>&nbsp;<span>1.4k 字</span>
+                <i class="icon fas fa-file-word"></i>&nbsp;<span>1.6k 字</span>
             </span>
         
         
             <span class="meta-info-item post-min2read">
-                <i class="icon fas fa-clock"></i>&nbsp;<span>5 分钟</span>
+                <i class="icon fas fa-clock"></i>&nbsp;<span>6 分钟</span>
             </span>
         
         
@@ -414,6 +420,25 @@
 
 <h2 id="安装qemu"><a href="#安装qemu" class="headerlink" title="安装qemu"></a>安装qemu</h2><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">sudo</span> apt-get install qemu-user-static</span><br><span class="line"><span class="built_in">sudo</span> apt-get install qemu-system</span><br></pre></td></tr></table></figure>
 
+<p>创建网络接口启动脚本&#x2F;etc&#x2F;qemu-ifup并写入：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta prompt_">#</span><span class="language-bash">!/bin/sh</span></span><br><span class="line">echo &quot;Executing /etc/qemu-ifup&quot;</span><br><span class="line">echo &quot;Bringing up $1 for bridge mode...&quot;</span><br><span class="line">sudo /sbin/ifconfig $1 0.0.0.0 promisc up</span><br><span class="line">echo &quot;Adding $1 to br0...&quot;</span><br><span class="line">sudo /sbin/brctl addif br0 $1</span><br><span class="line">sleep 2</span><br></pre></td></tr></table></figure>
+
+<p>赋予权限</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">sudo</span> <span class="built_in">chmod</span> a+x /etc/qemu-ifup</span><br></pre></td></tr></table></figure>
+
+<p>创建qemu使用桥的配置文件</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">sudo</span> <span class="built_in">mkdir</span> /etc/qemu</span><br><span class="line"><span class="built_in">sudo</span> vi /etc/qemu/bridge.conf</span><br></pre></td></tr></table></figure>
+
+<p>写入</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">allow br0</span><br></pre></td></tr></table></figure>
+
+<h2 id="安装binwalk"><a href="#安装binwalk" class="headerlink" title="安装binwalk"></a>安装binwalk</h2><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">sudo</span> apt install binwalk</span><br></pre></td></tr></table></figure>
+
+<h2 id="安装sasquatch"><a href="#安装sasquatch" class="headerlink" title="安装sasquatch"></a>安装sasquatch</h2><p><a class="link"   target="_blank" rel="noopener" href="https://github.com/devttys0/sasquatch" >devttys0&#x2F;sasquatch<i class="fas fa-external-link-alt"></i></a></p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">sudo</span> apt-get install build-essential liblzma-dev liblzo2-dev zlib1g-dev</span><br><span class="line">git <span class="built_in">clone</span> --quiet --depth 1 --branch <span class="string">&quot;master&quot;</span> https://github.com/devttys0/sasquatch</span><br><span class="line"><span class="built_in">cd</span> sasquatch</span><br><span class="line">wget https://github.com/devttys0/sasquatch/pull/51.patch &amp;&amp; patch -p1 &lt;51.patch</span><br><span class="line">CFLAGS=-fcommon ./build.sh</span><br></pre></td></tr></table></figure>
+
+<p>最后执行.&#x2F;build.sh之前可能要挂一下虚拟机的代理，不然请求不到。</p>
+<p>这应该是最优解了，踩了不少坑</p>
 
                     
                 </div>
@@ -483,10 +508,6 @@
                                         <i class="icon fas fa-hashtag"></i>&nbsp;<a href="/tags/iot/">iot</a>
                                     </li>
                                 
-                                    <li class="tag-item border-box">
-                                        <i class="icon fas fa-hashtag"></i>&nbsp;<a href="/tags/object-Object/">[object Object]</a>
-                                    </li>
-                                
                             </ul>
                         
                     </div>
@@ -522,6 +543,22 @@
 
                 
                     <div class="post-nav border-box">
+                        
+                            <div class="prev-post">
+                                <a class="prev"
+                                   rel="prev"
+                                   href="/2025/03/27/CVE-2017-17215%E5%A4%8D%E7%8E%B0/"
+                                   title="CVE-2017-17215复现"
+                                >
+                                    <span class="left arrow-icon flex-center">
+                                        <i class="fas fa-chevron-left"></i>
+                                    </span>
+                                    <span class="title flex-center">
+                                        <span class="post-nav-title-item text-ellipsis">CVE-2017-17215复现</span>
+                                        <span class="post-nav-item">上一篇</span>
+                                    </span>
+                                </a>
+                            </div>
                         
                         
                             <div class="next-post">
@@ -559,7 +596,7 @@
             <div class="pc-post-toc right-toc">
                 <div class="post-toc-wrap border-box">
     <div class="post-toc border-box">
-        <ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#iot%E7%8E%AF%E5%A2%83%E9%85%8D%E7%BD%AE%E5%A4%87%E5%BF%98"><span class="nav-text">iot环境配置备忘</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#Linux%E4%B8%AD%E9%85%8D%E7%BD%AEida"><span class="nav-text">Linux中配置ida</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AE%89%E8%A3%85ida%E4%BB%A5%E5%8F%8A%E5%A6%82%E4%BD%95%E5%9C%A8Windows%E4%B8%8B%E9%85%8D%E7%BD%AEidapython%E8%B7%AF%E5%BE%84"><span class="nav-text">安装ida以及如何在Windows下配置idapython路径</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Linux%E4%B8%8B%E9%80%9A%E8%BF%87wine%E6%B3%A8%E5%86%8C%E8%A1%A8%E8%AE%BE%E7%BD%AEidapython%E8%B7%AF%E5%BE%84"><span class="nav-text">Linux下通过wine注册表设置idapython路径</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8F%82%E8%80%83"><span class="nav-text">参考</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%BD%91%E7%BB%9C%E7%8E%AF%E5%A2%83%E9%85%8D%E7%BD%AE"><span class="nav-text">网络环境配置</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BF%AE%E6%94%B9-etc-network-interfaces"><span class="nav-text">修改&#x2F;etc&#x2F;network&#x2F;interfaces</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AE%89%E8%A3%85qemu"><span class="nav-text">安装qemu</span></a></li></ol></li></ol>
+        <ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#iot%E7%8E%AF%E5%A2%83%E9%85%8D%E7%BD%AE%E5%A4%87%E5%BF%98"><span class="nav-text">iot环境配置备忘</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#Linux%E4%B8%AD%E9%85%8D%E7%BD%AEida"><span class="nav-text">Linux中配置ida</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AE%89%E8%A3%85ida%E4%BB%A5%E5%8F%8A%E5%A6%82%E4%BD%95%E5%9C%A8Windows%E4%B8%8B%E9%85%8D%E7%BD%AEidapython%E8%B7%AF%E5%BE%84"><span class="nav-text">安装ida以及如何在Windows下配置idapython路径</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Linux%E4%B8%8B%E9%80%9A%E8%BF%87wine%E6%B3%A8%E5%86%8C%E8%A1%A8%E8%AE%BE%E7%BD%AEidapython%E8%B7%AF%E5%BE%84"><span class="nav-text">Linux下通过wine注册表设置idapython路径</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8F%82%E8%80%83"><span class="nav-text">参考</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%BD%91%E7%BB%9C%E7%8E%AF%E5%A2%83%E9%85%8D%E7%BD%AE"><span class="nav-text">网络环境配置</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BF%AE%E6%94%B9-etc-network-interfaces"><span class="nav-text">修改&#x2F;etc&#x2F;network&#x2F;interfaces</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AE%89%E8%A3%85qemu"><span class="nav-text">安装qemu</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AE%89%E8%A3%85binwalk"><span class="nav-text">安装binwalk</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AE%89%E8%A3%85sasquatch"><span class="nav-text">安装sasquatch</span></a></li></ol></li></ol>
     </div>
 </div>
 
@@ -594,7 +631,7 @@
             
                 <span class="count-item border-box word">
                     <span class="item-type border-box">总字数</span>
-                    <span class="item-value border-box word">29.4k</span>
+                    <span class="item-value border-box word">29.6k</span>
                 </span>
             
 
@@ -742,7 +779,7 @@
             <div class="tablet-post-toc">
                 <div class="post-toc-wrap border-box">
     <div class="post-toc border-box">
-        <ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#iot%E7%8E%AF%E5%A2%83%E9%85%8D%E7%BD%AE%E5%A4%87%E5%BF%98"><span class="nav-text">iot环境配置备忘</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#Linux%E4%B8%AD%E9%85%8D%E7%BD%AEida"><span class="nav-text">Linux中配置ida</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AE%89%E8%A3%85ida%E4%BB%A5%E5%8F%8A%E5%A6%82%E4%BD%95%E5%9C%A8Windows%E4%B8%8B%E9%85%8D%E7%BD%AEidapython%E8%B7%AF%E5%BE%84"><span class="nav-text">安装ida以及如何在Windows下配置idapython路径</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Linux%E4%B8%8B%E9%80%9A%E8%BF%87wine%E6%B3%A8%E5%86%8C%E8%A1%A8%E8%AE%BE%E7%BD%AEidapython%E8%B7%AF%E5%BE%84"><span class="nav-text">Linux下通过wine注册表设置idapython路径</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8F%82%E8%80%83"><span class="nav-text">参考</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%BD%91%E7%BB%9C%E7%8E%AF%E5%A2%83%E9%85%8D%E7%BD%AE"><span class="nav-text">网络环境配置</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BF%AE%E6%94%B9-etc-network-interfaces"><span class="nav-text">修改&#x2F;etc&#x2F;network&#x2F;interfaces</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AE%89%E8%A3%85qemu"><span class="nav-text">安装qemu</span></a></li></ol></li></ol>
+        <ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#iot%E7%8E%AF%E5%A2%83%E9%85%8D%E7%BD%AE%E5%A4%87%E5%BF%98"><span class="nav-text">iot环境配置备忘</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#Linux%E4%B8%AD%E9%85%8D%E7%BD%AEida"><span class="nav-text">Linux中配置ida</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AE%89%E8%A3%85ida%E4%BB%A5%E5%8F%8A%E5%A6%82%E4%BD%95%E5%9C%A8Windows%E4%B8%8B%E9%85%8D%E7%BD%AEidapython%E8%B7%AF%E5%BE%84"><span class="nav-text">安装ida以及如何在Windows下配置idapython路径</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Linux%E4%B8%8B%E9%80%9A%E8%BF%87wine%E6%B3%A8%E5%86%8C%E8%A1%A8%E8%AE%BE%E7%BD%AEidapython%E8%B7%AF%E5%BE%84"><span class="nav-text">Linux下通过wine注册表设置idapython路径</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8F%82%E8%80%83"><span class="nav-text">参考</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%BD%91%E7%BB%9C%E7%8E%AF%E5%A2%83%E9%85%8D%E7%BD%AE"><span class="nav-text">网络环境配置</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BF%AE%E6%94%B9-etc-network-interfaces"><span class="nav-text">修改&#x2F;etc&#x2F;network&#x2F;interfaces</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AE%89%E8%A3%85qemu"><span class="nav-text">安装qemu</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AE%89%E8%A3%85binwalk"><span class="nav-text">安装binwalk</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AE%89%E8%A3%85sasquatch"><span class="nav-text">安装sasquatch</span></a></li></ol></li></ol>
     </div>
 </div>
 
