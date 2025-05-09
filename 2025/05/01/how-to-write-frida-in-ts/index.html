@@ -1,0 +1,911 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <meta name="keywords" content="pwn, ctf, pwnable, ctfwriteup, writeup, essays, 题解">
+    <meta name="description" content="Marce1&#39;s blog">
+    <meta name="author" content="Marce1">
+    
+    <title>
+        
+            how_to_write_frida_in_ts |
+        
+        Marce1&#39;s Blog
+    </title>
+    
+<link rel="stylesheet" href="/css/style.css">
+
+    
+        <link rel="shortcut icon" href="/images/Marce1_2.svg">
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/hexo-theme-keep/4.2.3/font/css/fontawesome.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/hexo-theme-keep/4.2.3/font/css/regular.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/hexo-theme-keep/4.2.3/font/css/solid.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/hexo-theme-keep/4.2.3/font/css/brands.min.css">
+    
+    <script class="keep-theme-configurations">
+    const KEEP = window.KEEP || {}
+    KEEP.hexo_config = {"hostname":"marce1bin.github.io","root":"/","language":"zh-CN","path":"search.json"}
+    KEEP.theme_config = {"base_info":{"primary_color":"#0066cc","title":"Marce1's Blog","author":"Marce1","avatar":"/images/Marce1_2.svg","logo":"/images/Marce1_2.svg","favicon":"/images/Marce1_2.svg"},"menu":{"home":"/                        || fa-solid fa-house","archives":"/archives           || fa-solid fa-book","tags":"/tags                 || fa-solid fa-tags","categories":"/categories     || fa-solid fa-layer-group","about":"/about              || fa-solid fa-user-graduate"},"first_screen":{"enable":true,"background_img":"/images/bg.svg","background_img_dark":"/images/bg.svg","description":"取乎其上，得乎其中；取乎其中，得乎其下；取乎其下，则无所得矣。","hitokoto":false},"social_contact":{"enable":false,"links":{"github":null,"weixin":"img | /images/weixin.PNG","qq":"img | /images/qq.PNG","weibo":null,"zhihu":null,"twitter":null,"x":null,"facebook":null,"email":null}},"scroll":{"progress_bar":true,"percent":false,"hide_header":true},"home":{"announcement":null,"category":true,"tag":true,"post_datetime":"updated"},"post":{"author_badge":{"enable":false,"level_badge":false,"custom_badge":["One","Two","Three"]},"word_count":{"wordcount":true,"min2read":true},"datetime_format":"YYYY-MM-DD HH:mm:ss","copyright_info":true,"share":true,"reward":{"enable":false,"img_link":null,"text":null,"icon":null}},"code_block":{"tools":{"enable":true,"style":"default"},"highlight_theme":"default"},"toc":{"enable":true,"number":false,"expand_all":true,"init_open":true,"layout":"right"},"website_count":{"busuanzi_count":{"enable":true,"site_uv":true,"site_pv":true,"page_pv":true}},"local_search":{"enable":true,"preload":true},"comment":{"enable":false,"use":"valine","valine":{"appid":null,"appkey":null,"server_urls":null,"placeholder":null},"gitalk":{"github_id":null,"github_admins":null,"repository":null,"client_id":null,"client_secret":null,"proxy":null},"twikoo":{"env_id":null,"region":null,"version":"1.6.36"},"waline":{"server_url":null,"reaction":false,"version":"3.2.1"},"giscus":{"repo":null,"repo_id":null,"category":"Announcements","category_id":null,"reactions_enabled":false},"artalk":{"server":null},"disqus":{"shortname":null}},"rss":{"enable":false},"lazyload":{"enable":false},"cdn":{"enable":true,"provider":"cdnjs"},"pjax":{"enable":true},"footer":{"since":2020,"word_count":true,"site_deploy":{"enable":false,"provider":"github","url":null},"record":{"enable":false,"list":[{"code":null,"link":null}]}},"inject":{"enable":false,"css":[null],"js":[null]},"root":"","source_data":{},"version":"4.2.3"}
+    KEEP.language_ago = {"second":"%s 秒前","minute":"%s 分钟前","hour":"%s 小时前","day":"%s 天前","week":"%s 周前","month":"%s 个月前","year":"%s 年前"}
+    KEEP.language_code_block = {"copy":"复制代码","copied":"已复制","fold":"折叠代码块","folded":"已折叠"}
+    KEEP.language_copy_copyright = {"copy":"复制版权信息","copied":"已复制","title":"原文标题","author":"原文作者","link":"原文链接"}
+  </script>
+<meta name="generator" content="Hexo 7.3.0"></head>
+
+
+<body>
+<div class="progress-bar-container">
+    
+        <span class="scroll-progress-bar"></span>
+    
+
+    
+        <span class="pjax-progress-bar"></span>
+        <i class="pjax-progress-icon fas fa-circle-notch fa-spin"></i>
+    
+</div>
+
+
+
+<main class="page-container border-box">
+    <!-- home first screen  -->
+    
+
+    <!-- page content -->
+    <div class="page-main-content border-box">
+        <div class="page-main-content-top">
+            
+<header class="header-wrapper">
+
+    <div class="border-box header-content">
+        <div class="left flex-start border-box">
+            
+                <a class="logo-image border-box" href="/">
+                    <img src="/images/Marce1_2.svg">
+                </a>
+            
+            <a class="site-name border-box" href="/">
+               Marce1&#39;s Blog
+            </a>
+        </div>
+
+        <div class="right border-box">
+            <div class="pc border-box">
+                <ul class="menu-list border-box">
+                    
+                        
+                        <li class="menu-item flex-start border-box">
+                            <a class="menu-text-color border-box" href="/">
+                                
+                                    <i class="menu-text-color menu-icon fa-solid fa-house"></i>
+                                
+                                首页
+                                
+                            </a>
+                            
+                        </li>
+                    
+                        
+                        <li class="menu-item flex-start border-box">
+                            <a class="menu-text-color border-box" href="/archives">
+                                
+                                    <i class="menu-text-color menu-icon fa-solid fa-book"></i>
+                                
+                                归档
+                                
+                            </a>
+                            
+                        </li>
+                    
+                        
+                        <li class="menu-item flex-start border-box">
+                            <a class="menu-text-color border-box" href="/tags">
+                                
+                                    <i class="menu-text-color menu-icon fa-solid fa-tags"></i>
+                                
+                                标签
+                                
+                            </a>
+                            
+                        </li>
+                    
+                        
+                        <li class="menu-item flex-start border-box">
+                            <a class="menu-text-color border-box" href="/categories">
+                                
+                                    <i class="menu-text-color menu-icon fa-solid fa-layer-group"></i>
+                                
+                                分类
+                                
+                            </a>
+                            
+                        </li>
+                    
+                        
+                        <li class="menu-item flex-start border-box">
+                            <a class="menu-text-color border-box" href="/about">
+                                
+                                    <i class="menu-text-color menu-icon fa-solid fa-user-graduate"></i>
+                                
+                                关于
+                                
+                            </a>
+                            
+                        </li>
+                    
+                    
+                        <li class="menu-item search search-popup-trigger">
+                            <i class="menu-text-color fas search fa-search"></i>
+                        </li>
+                    
+                </ul>
+            </div>
+            <div class="mobile border-box flex-start">
+                
+                    <div class="icon-item search search-popup-trigger"><i class="fas fa-search"></i></div>
+                
+                <div class="icon-item menu-bar">
+                    <div class="menu-bar-middle"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="header-drawer">
+        <ul class="drawer-menu-list border-box">
+            
+                
+                <li class="drawer-menu-item border-box not-sub-menu">
+                    <label class="drawer-menu-label border-box">
+                        <a class="drawer-menu-text-color left-side flex-start border-box" href="/">
+                            
+                                <span class="menu-icon-wrap border-box flex-center">
+                                    <i class="drawer-menu-text-color menu-icon fa-solid fa-house"></i>
+                                </span>
+                            
+                            首页
+                        </a>
+                        
+                    </label>
+                    
+                </li>
+            
+                
+                <li class="drawer-menu-item border-box not-sub-menu">
+                    <label class="drawer-menu-label border-box">
+                        <a class="drawer-menu-text-color left-side flex-start border-box" href="/archives">
+                            
+                                <span class="menu-icon-wrap border-box flex-center">
+                                    <i class="drawer-menu-text-color menu-icon fa-solid fa-book"></i>
+                                </span>
+                            
+                            归档
+                        </a>
+                        
+                    </label>
+                    
+                </li>
+            
+                
+                <li class="drawer-menu-item border-box not-sub-menu">
+                    <label class="drawer-menu-label border-box">
+                        <a class="drawer-menu-text-color left-side flex-start border-box" href="/tags">
+                            
+                                <span class="menu-icon-wrap border-box flex-center">
+                                    <i class="drawer-menu-text-color menu-icon fa-solid fa-tags"></i>
+                                </span>
+                            
+                            标签
+                        </a>
+                        
+                    </label>
+                    
+                </li>
+            
+                
+                <li class="drawer-menu-item border-box not-sub-menu">
+                    <label class="drawer-menu-label border-box">
+                        <a class="drawer-menu-text-color left-side flex-start border-box" href="/categories">
+                            
+                                <span class="menu-icon-wrap border-box flex-center">
+                                    <i class="drawer-menu-text-color menu-icon fa-solid fa-layer-group"></i>
+                                </span>
+                            
+                            分类
+                        </a>
+                        
+                    </label>
+                    
+                </li>
+            
+                
+                <li class="drawer-menu-item border-box not-sub-menu">
+                    <label class="drawer-menu-label border-box">
+                        <a class="drawer-menu-text-color left-side flex-start border-box" href="/about">
+                            
+                                <span class="menu-icon-wrap border-box flex-center">
+                                    <i class="drawer-menu-text-color menu-icon fa-solid fa-user-graduate"></i>
+                                </span>
+                            
+                            关于
+                        </a>
+                        
+                    </label>
+                    
+                </li>
+            
+        </ul>
+    </div>
+
+    <div class="window-mask"></div>
+
+</header>
+
+
+        </div>
+
+        <div class="page-main-content-middle border-box">
+
+            <div class="main-content border-box">
+                
+
+                    
+<div class="fade-in-down-animation">
+    <div class="post-page-container border-box">
+        <div class="post-content-container border-box">
+            
+
+            <div class="post-content-bottom border-box">
+                
+                    <div class="post-title">
+                        how_to_write_frida_in_ts
+                    </div>
+                
+
+                
+                    <div class="post-header border-box">
+                        
+                            <div class="avatar-box border-box">
+                                <img src="/images/Marce1_2.svg">
+                            </div>
+                        
+                        <div class="info-box">
+                            <div class="author border-box">
+                                <span class="name">Marce1</span>
+                                
+                            </div>
+                            <div class="meta-info border-box">
+                                
+
+<div class="post-meta-info-container border-box post">
+    <div class="post-meta-info border-box">
+        
+
+        
+            <span class="meta-info-item post-create-date">
+                <i class="icon fa-solid fa-calendar-plus"></i>&nbsp;
+                <span class="datetime">2025-05-01 21:59:56</span>
+            </span>
+
+            <span class="meta-info-item post-update-date">
+                <i class="icon fa-solid fa-file-pen"></i>&nbsp;
+                <span class="datetime" data-updated="Mon May 05 2025 23:08:31 GMT+0800">2025-05-05 23:08:31</span>
+            </span>
+        
+
+        
+            <span class="meta-info-item post-category border-box"><i class="icon fas fa-folder"></i>&nbsp;
+                <ul class="post-category-ul">
+                    
+                            <li class="category-item"><a href="/categories/android/">android</a></li>
+                        
+                    
+                            <li class="category-item">&nbsp;<i class="icon fas fa-angle-right"></i>&nbsp;<a href="/categories/android/reverse/">reverse</a></li>
+                        
+                    
+                </ul>
+            </span>
+        
+
+        
+            <span class="post-tag meta-info-item border-box">
+                <ul class="post-tag-ul">
+                    
+                            <li class="tag-item"><span class="tag-separator"><i class="icon fas fa-hashtag"></i></span><a href="/tags/to-do-list/">to_do_list</a></li>
+                        
+                    
+                            <li class="tag-item"><span class="tag-separator"><i class="icon fas fa-hashtag"></i></span><a href="/tags/android/">android</a></li>
+                        
+                    
+                            <li class="tag-item"><span class="tag-separator"><i class="icon fas fa-hashtag"></i></span><a href="/tags/reverse/">reverse</a></li>
+                        
+                    
+                </ul>
+            </span>
+        
+
+        
+        
+            <span class="meta-info-item post-wordcount">
+                <i class="icon fas fa-file-word"></i>&nbsp;<span>2.1k 字</span>
+            </span>
+        
+        
+            <span class="meta-info-item post-min2read">
+                <i class="icon fas fa-clock"></i>&nbsp;<span>8 分钟</span>
+            </span>
+        
+        
+            <span class="meta-info-item post-pv">
+                <i class="icon fas fa-eye"></i>&nbsp;<span id="busuanzi_value_page_pv"></span>
+            </span>
+        
+    </div>
+
+    
+</div>
+
+                            </div>
+                        </div>
+                    </div>
+                
+
+                <div class="post-content keep-markdown-body ">
+                    
+
+                    
+                         <h1 id=""><a href="#" class="headerlink" title=""></a></h1><p>习惯了用javascript写frida脚本，为什么要用typescript？</p>
+<p><img   src="C:\Users\彬彬\Desktop\HEXO-blog\source_posts\how-to-write-frida-in-ts\image-20250501220658462.png"  alt="image-20250501220658462"></p>
+<p>学完javascript之后再看ts，应该就会觉得ts是一个大号的js——ts之于js就像c++之于c，前者是后者的超集，相当于js的一个大型dlc，这个dlc完全和本体兼容（ts脚本可以直接编译成js脚本），而且添加了很多特性的语言拓展：由弱类型语言变为强类型，静态类型检查在编译阶段就可以发现变量类型不匹配的错误；支持接口，方便开发与拓展；与node.js协作，有丰富的开源模块与工具，把你的脚本像项目一样管理（js其实就可以……</p>
+<p>哇，好处一大堆。</p>
+<p>那就让我们开始吧</p>
+<h2 id="环境配置"><a href="#环境配置" class="headerlink" title="环境配置"></a>环境配置</h2><p>直接看网上的教程可能有点迷糊：我就写个hook脚本而已，要配这么多东西吗？？？</p>
+<p>网上的教程（包括frida-agent-example)都是将ts项目构建在node.js项目之上，这一点跟着做可能会不明所以，其实是方便使用node.js的各种模块和功能（包括frida），同时又能利用ts的类型检查和其他特性。</p>
+<ol>
+<li><p>确保你有node.js和npm环境</p>
+</li>
+<li><p>新建一个项目，或者文件夹</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">mkdir</span> frida-agent-test</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>建立一个node.js项目</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">npm init</span><br></pre></td></tr></table></figure>
+
+<p>终端上会让你设置一些其他的，包括程序入口，作者之类的，随你便。之后目录下会出现一个package.json,这个文件会记录一些项目的基本信息，包括你刚才的那些设置、自定义脚本命令、项目依赖之类的。</p>
+</li>
+<li><p>安装项目依赖——typescript</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">npm install typescript --save-dev</span><br></pre></td></tr></table></figure>
+
+<p>为了保证项目的独立性，每次新建一个node.js项目时都要单独安装typescript</p>
+<blockquote>
+<p>某个项目可能需要使用 TypeScript 的最新特性，因此依赖较新的版本，而另一个项目可能因为兼容性问题需要使用旧版本</p>
+</blockquote>
+<p>–save-dev选项会将包安装到项目的node_modules目录下，同时作为开发依赖项记录到package.json中</p>
+</li>
+</ol>
+<p><img   src="C:\Users\彬彬\Desktop\HEXO-blog\source_posts\how-to-write-frida-in-ts\image-20250428113830560.png"  alt="image-20250428113830560"></p>
+<ol start="5">
+<li><p>创建ts配置文件tsconfig.json</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">tsc --init</span><br></pre></td></tr></table></figure>
+
+<p>tsconfig.json可以对ts项目中ts编译器的行为进行控制，比如指定js版本，严格类型检查之类的</p>
+<p><img   src="C:\Users\彬彬\Desktop\HEXO-blog\source_posts\how-to-write-frida-in-ts\image-20250428114406918.png"  alt="image-20250428114406918"></p>
+<p>这个配置文件的内容多的要死，一条一条看吧</p>
+</li>
+<li><p>安装依赖</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">npm install @types/node @types/frida-gum frida-compile@10.2.1 --save-dev</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li><p><code>@types/node</code></p>
+<ul>
+<li><code>@types</code> 是一个用于存放 TypeScript 类型定义文件的命名空间。在 TypeScript 项目中，很多 JavaScript 库本身并没有附带类型定义，这会导致 TypeScript 编译器无法理解这些库的类型信息，使用时会缺少类型检查和智能提示。而 <code>@types</code> 社区为众多流行的 JavaScript 库提供了类型定义文件。</li>
+<li><code>@types/node</code> 就是为 Node.js 标准库提供的类型定义包。当你使用 TypeScript 开发 Node.js 项目时，安装它可以让 TypeScript 编译器理解 Node.js 相关的 API 和模块的类型信息，提高开发效率和代码的可靠性。</li>
+</ul>
+</li>
+<li><p><code>frida-compile</code></p>
+<ul>
+<li>Frida 是一款强大的动态代码插桩工具，可用于在运行时修改应用程序的行为。<code>frida-compile</code> 是 Frida 的一个编译工具，它可以帮助开发者将 Frida 脚本进行编译和打包，以便在不同的环境中使用。例如，你可以使用它来编写脚本，在运行时注入到目标应用程序中，实现调试、监控等功能。</li>
+</ul>
+</li>
+<li><p><code>@types/frida-gum</code></p>
+<ul>
+<li>同样属于 <code>@types</code> 命名空间，<code>frida-gum</code> 是 Frida 框架的一部分，它提供了一些用于动态代码插桩的基础功能和 API。<code>@types/frida-gum</code> 为 <code>frida-gum</code> 提供了 TypeScript 类型定义，这样在 TypeScript 项目中使用 <code>frida-gum</code> 时，就可以获得类型检查和智能提示等功能。像之前的Java、Interceptor、Module之类的api就由frida-gum提供</li>
+</ul>
+<p><img   src="C:\Users\彬彬\Desktop\HEXO-blog\source_posts\how-to-write-frida-in-ts\image-20250428115146579.png"  alt="image-20250428115146579"></p>
+<p>如果在这一步之前你直接在项目下写ts脚本，可能编辑器会对Java、Module之类的api调用标错，但是安装了frida的依赖之后就ok了</p>
+</li>
+</ul>
+<ol start="7">
+<li><p>编写脚本</p>
+<p>首先，将package.json中main入口修改为index.js</p>
+<p>然后编写一个简单的脚本：</p>
+<figure class="highlight ts"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">const</span> <span class="attr">test_str</span>: <span class="built_in">string</span> = <span class="string">&#x27;hello world&#x27;</span></span><br><span class="line"><span class="variable language_">console</span>.<span class="title function_">log</span>(<span class="string">&#x27;I want to say $&#123;test_str&#125; to you&#x27;</span>)</span><br></pre></td></tr></table></figure>
+
+<p>仿照frida-agent-example将自定义构建脚本写入package.json</p>
+<p><img   src="C:\Users\彬彬\Desktop\HEXO-blog\source_posts\how-to-write-frida-in-ts\image-20250428121058328.png"  alt="image-20250428121058328"></p>
+</li>
+</ol>
+</li>
+</ol>
+<p>frida-compile中参数-c是采用压缩方式编译（什么意思，我试了就是普通的编译成js呀），-w就是–watch，实时监测脚本改动并重新编译，执行编译指令后你在ts脚本上的改动会直接影响frida注入。</p>
+<p>通过npm run就能执行自定义脚本的指令</p>
+<p><img   src="C:\Users\彬彬\Desktop\HEXO-blog\source_posts\how-to-write-frida-in-ts\image-20250428121235217.png"  alt="image-20250428121235217"></p>
+<p>尝试编译</p>
+<p><img   src="C:\Users\彬彬\Desktop\HEXO-blog\source_posts\how-to-write-frida-in-ts\image-20250428121632083.png"  alt="image-20250428121632083"></p>
+<p>据说这个报错是因为调用了废弃的api，我尝试将node版本降级后仍然会报错</p>
+<p><img   src="C:\Users\彬彬\Desktop\HEXO-blog\source_posts\how-to-write-frida-in-ts\image-20250428122229891.png"  alt="image-20250428122229891"></p>
+<p>但是他仍然会正常编译出一个_agent.js，之后frida怎么用怎么来。我秉持着能用就行的准则，有时间再查解决方案。</p>
+<h2 id="ts和js有哪些不同？"><a href="#ts和js有哪些不同？" class="headerlink" title="ts和js有哪些不同？"></a>ts和js有哪些不同？</h2><p>难说。因为之前做的大部分hook练习都是用js写的，估计要自己摸索才能体会到ts的好。</p>
+<p>那就把一些比较有意思的ts脚本练习记录弃置于此吧</p>
+<h3 id="frida入门小练习-第一题"><a href="#frida入门小练习-第一题" class="headerlink" title="frida入门小练习-第一题"></a>frida入门小练习-第一题</h3><p><img   src="C:\Users\彬彬\Desktop\HEXO-blog\source_posts\how-to-write-frida-in-ts\image-20250501224616370.png"  alt="image-20250501224616370"></p>
+<p>onClick通过VVVVV的VVVV方法检测flag是否正确，看看：</p>
+<p><img   src="C:\Users\彬彬\Desktop\HEXO-blog\source_posts\how-to-write-frida-in-ts\image-20250501224757212.png"  alt="image-20250501224757212"></p>
+<p>输入的字符串通过一大坨加密再与预设字符串6f452303f18605510aac694b0f5736beebf110bf比对，只不过看到输入长度固定在5个字符以内且必须为数字就不用分析加密了，完全可以爆破eeee方法，分析返回的字符串是否与”6f452303f18605510aac694b0f5736beebf110bf”相同就能得出flag数字。</p>
+<p>这几个加密方法都是静态方法，更加方便我们进行hook，可以直接指定类进行调用。你肯定有疑问：为什么不调用VVVV，就可以直接通过返回值判断字符串是否正确？VVVV需要调用一个OnClickListener的对象作为参数，这样的参数我们当然不好找。</p>
+<p>这是我的第一版脚本：</p>
+<figure class="highlight ts"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="title class_">Java</span>.<span class="title function_">perform</span>((): <span class="function"><span class="params">void</span> =&gt;</span> &#123;</span><br><span class="line">    <span class="keyword">const</span> <span class="attr">vvvvv</span>: <span class="built_in">any</span> = <span class="title class_">Java</span>.<span class="title function_">use</span>(<span class="string">&quot;com.kanxue.pediy1.VVVVV&quot;</span>);</span><br><span class="line">    <span class="keyword">const</span> <span class="attr">target</span>: <span class="built_in">string</span> = <span class="string">&#x27;6f452303f18605510aac694b0f5736beebf110bf&#x27;</span></span><br><span class="line">    <span class="keyword">for</span>(<span class="keyword">let</span> <span class="attr">i1</span>: <span class="built_in">number</span> = <span class="number">48</span>; i1&lt;<span class="number">58</span>; i1++)&#123;</span><br><span class="line">        <span class="keyword">for</span>(<span class="keyword">let</span> <span class="attr">i2</span>: <span class="built_in">number</span> = <span class="number">48</span>; i2&lt;<span class="number">58</span>; i2++)&#123;</span><br><span class="line">            <span class="keyword">for</span>(<span class="keyword">let</span> <span class="attr">i3</span>: <span class="built_in">number</span> = <span class="number">48</span>; i3&lt;<span class="number">58</span>; i3++)&#123;</span><br><span class="line">                <span class="keyword">for</span>(<span class="keyword">let</span> <span class="attr">i4</span>: <span class="built_in">number</span> = <span class="number">48</span>; i4&lt;<span class="number">58</span>; i4++)&#123;</span><br><span class="line">                    <span class="keyword">for</span>(<span class="keyword">let</span> <span class="attr">i5</span>: <span class="built_in">number</span> = <span class="number">48</span>; i5&lt;<span class="number">58</span>; i5++)&#123;</span><br><span class="line">                        <span class="keyword">let</span> flag = <span class="title class_">String</span>.<span class="title function_">fromCharCode</span>(i1, i2, i3, i4, i5);</span><br><span class="line">                        <span class="variable language_">console</span>.<span class="title function_">log</span>(<span class="string">`testing: <span class="subst">$&#123;flag&#125;</span>`</span>);</span><br><span class="line">                        <span class="keyword">if</span>(vvvvv.<span class="title function_">eeeee</span>(flag).<span class="title function_">equals</span>(target))&#123;</span><br><span class="line">                            <span class="variable language_">console</span>.<span class="title function_">log</span>(<span class="string">`find numbers: <span class="subst">$&#123;flag&#125;</span>`</span>);</span><br><span class="line">                            <span class="keyword">return</span>;</span><br><span class="line">                        &#125;</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="variable language_">console</span>.<span class="title function_">log</span>(<span class="string">&#x27;Not find!Something went wrong...&#x27;</span>)</span><br><span class="line">&#125;)</span><br></pre></td></tr></table></figure>
+
+<p>由于我使用的是模拟器，爆破过多会导致脚本中断退出，但是没有关系，记住这次爆破大概中断在哪个数上，下次改改脚本接着爆就行了</p>
+<p>但是这个脚本是爆不出来的。比对了其他writeup和我的脚本区别之后我发现了问题所在：</p>
+<p>vvvvv.eeeee(flag)实际上返回的只是字符串吗？</p>
+<p>是的，但是是java的字符串对象。java的字符串对象能直接和js的字符串对象比对吗？问题就在于此——hook java层的返回值可以打印出来，看起来别无二致，但是还是有区别！这样子一万年比不出来</p>
+<figure class="highlight ts"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="title class_">Java</span>.<span class="title function_">perform</span>((): <span class="function"><span class="params">void</span> =&gt;</span> &#123;</span><br><span class="line">    <span class="keyword">const</span> <span class="attr">vvvvv</span>: <span class="built_in">any</span> = <span class="title class_">Java</span>.<span class="title function_">use</span>(<span class="string">&quot;com.kanxue.pediy1.VVVVV&quot;</span>);</span><br><span class="line">    <span class="keyword">const</span> <span class="attr">target</span>: <span class="built_in">string</span> = <span class="string">&#x27;6f452303f18605510aac694b0f5736beebf110bf&#x27;</span></span><br><span class="line">    <span class="keyword">for</span>(<span class="keyword">let</span> <span class="attr">i1</span>: <span class="built_in">number</span> = <span class="number">50</span>; i1&lt;<span class="number">58</span>; i1++)&#123;</span><br><span class="line">        <span class="keyword">for</span>(<span class="keyword">let</span> <span class="attr">i2</span>: <span class="built_in">number</span> = <span class="number">48</span>; i2&lt;<span class="number">58</span>; i2++)&#123;</span><br><span class="line">            <span class="keyword">for</span>(<span class="keyword">let</span> <span class="attr">i3</span>: <span class="built_in">number</span> = <span class="number">48</span>; i3&lt;<span class="number">58</span>; i3++)&#123;</span><br><span class="line">                <span class="keyword">for</span>(<span class="keyword">let</span> <span class="attr">i4</span>: <span class="built_in">number</span> = <span class="number">48</span>; i4&lt;<span class="number">58</span>; i4++)&#123;</span><br><span class="line">                    <span class="keyword">for</span>(<span class="keyword">let</span> <span class="attr">i5</span>: <span class="built_in">number</span> = <span class="number">48</span>; i5&lt;<span class="number">58</span>; i5++)&#123;</span><br><span class="line">                        <span class="keyword">let</span> flag = <span class="title class_">String</span>.<span class="title function_">fromCharCode</span>(i1, i2, i3, i4, i5);</span><br><span class="line">                        <span class="variable language_">console</span>.<span class="title function_">log</span>(<span class="string">`testing: <span class="subst">$&#123;flag&#125;</span>`</span>);</span><br><span class="line">                        <span class="keyword">const</span> result = <span class="title class_">Java</span>.<span class="title function_">use</span>(<span class="string">&quot;java.lang.String&quot;</span>).$new(vvvvv.<span class="title function_">eeeee</span>(flag)).<span class="title function_">toString</span>();</span><br><span class="line">                        <span class="keyword">if</span> (result === target) &#123;</span><br><span class="line">                            <span class="variable language_">console</span>.<span class="title function_">log</span>(<span class="string">`find numbers: <span class="subst">$&#123;flag&#125;</span>`</span>);</span><br><span class="line">                            <span class="keyword">return</span>;</span><br><span class="line">                        &#125;</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;)</span><br></pre></td></tr></table></figure>
+
+<p>通过 <code>Java.use(&quot;java.lang.String&quot;).$new()</code> 转换为 Java 字符串对象，再使用 <code>toString()</code> 方法将其转换为 JavaScript 字符串，最后使用 <code>===</code> 进行严格比较，这样就能得出最终的flag为66888.</p>
+<p>##reference</p>
+<p><a class="link"   target="_blank" rel="noopener" href="https://github.com/oleavr/frida-agent-example" >https://github.com/oleavr/frida-agent-example<i class="fas fa-external-link-alt"></i></a></p>
+<p><a class="link"   target="_blank" rel="noopener" href="https://blog.csdn.net/kinghzking/article/details/136772475" >https://blog.csdn.net/kinghzking/article/details/136772475<i class="fas fa-external-link-alt"></i></a></p>
+<p><a class="link"   target="_blank" rel="noopener" href="https://www.52pojie.cn/thread-1363328-1-1.html" >https://www.52pojie.cn/thread-1363328-1-1.html<i class="fas fa-external-link-alt"></i></a></p>
+<p><a class="link"   target="_blank" rel="noopener" href="https://github.com/BRUHItsABunny/FRIDASampleAgentTS" >https://github.com/BRUHItsABunny/FRIDASampleAgentTS<i class="fas fa-external-link-alt"></i></a></p>
+<p>[<a class="link"   target="_blank" rel="noopener" href="https://bbs.kanxue.com/thread-260536.htm" >原创]Frida 入门小练习-Android安全-看雪-安全社区|安全招聘|kanxue.com<i class="fas fa-external-link-alt"></i></a></p>
+
+                    
+                </div>
+
+                
+                        
+<div class="post-copyright-info-container border-box">
+    <div class="copyright-info-content border-box">
+        <div class="copyright-info-top border-box">
+            <div class="copyright-post-title border-box text-ellipsis">
+                how_to_write_frida_in_ts
+            </div>
+
+            <div class="copyright-post-link border-box text-ellipsis">
+                2025/05/01/how-to-write-frida-in-ts/
+            </div>
+        </div>
+
+        <div class="copyright-info-bottom border-box">
+            <div class="copyright-post-author bottom-item">
+                <div class="type">
+                    作者
+                </div>
+                <div class="content">Marce1</div>
+            </div>
+
+            <div class="post-time bottom-item">
+                <div class="type">
+                    发布于
+                </div>
+                <div class="content">2025-05-01 21:59</div>
+            </div>
+
+
+            <div class="post-license bottom-item">
+                <div class="type">
+                    许可
+                </div>
+                <div class="content tooltip" data-tooltip-content="CC BY-NC-SA 4.0">
+                    <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh-hans" target="_blank">
+                        
+                            <i class="fa-brands fa-creative-commons"></i>
+                            <i class="fa-brands fa-creative-commons-by"></i>
+                            <i class="fa-brands fa-creative-commons-nc"></i>
+                            <i class="fa-brands fa-creative-commons-sa"></i>
+                        
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <i class="copyright-bg fa-solid fa-copyright"></i>
+    </div>
+    <div class="copy-copyright-info flex-center tooltip" data-tooltip-content="复制版权信息" data-tooltip-offset-y="-2px">
+        <i class="fa-solid fa-copy"></i>
+    </div>
+</div>
+
+                
+
+                <div class="post-bottom-tags-and-share border-box">
+                    <div>
+                        
+                            <ul class="post-tags-box border-box">
+                                
+                                    <li class="tag-item border-box">
+                                        <i class="icon fas fa-hashtag"></i>&nbsp;<a href="/tags/to-do-list/">to_do_list</a>
+                                    </li>
+                                
+                                    <li class="tag-item border-box">
+                                        <i class="icon fas fa-hashtag"></i>&nbsp;<a href="/tags/android/">android</a>
+                                    </li>
+                                
+                                    <li class="tag-item border-box">
+                                        <i class="icon fas fa-hashtag"></i>&nbsp;<a href="/tags/reverse/">reverse</a>
+                                    </li>
+                                
+                            </ul>
+                        
+                    </div>
+                    <div>
+                        
+                            <div class="post-share-container border-box">
+    <ul class="share-list-wrap border-box">
+        <li class="qq share-item border-box flex-center tooltip"
+            data-tooltip-content="分享到 QQ"
+        >
+            <i class="fa-brands fa-qq"></i>
+        </li>
+        <li class="wechat share-item border-box flex-center tooltip tooltip-img"
+            data-tooltip-content="分享到微信"
+            data-tooltip-img-tip="微信扫一扫"
+            data-tooltip-img-style="background-color: #fff; top: -10px; padding: 0.6rem 0.6rem 0.1rem 0.6rem;"
+        >
+            <i class="fa-brands fa-weixin"></i>
+        </li>
+        <li class="weibo share-item border-box flex-center tooltip"
+            data-tooltip-content="分享到微博"
+        >
+            <i class="fa-brands fa-weibo"></i>
+        </li>
+    </ul>
+</div>
+
+                        
+                    </div>
+                </div>
+
+                
+
+                
+                    <div class="post-nav border-box">
+                        
+                            <div class="prev-post">
+                                <a class="prev"
+                                   rel="prev"
+                                   href="/2025/05/02/%E4%BB%8Einstant-run%E5%88%B0%E7%83%AD%E8%A1%A5%E4%B8%81%E6%A1%86%E6%9E%B6Robust/"
+                                   title="从instant run到热补丁框架Robust"
+                                >
+                                    <span class="left arrow-icon flex-center">
+                                        <i class="fas fa-chevron-left"></i>
+                                    </span>
+                                    <span class="title flex-center">
+                                        <span class="post-nav-title-item text-ellipsis">从instant run到热补丁框架Robust</span>
+                                        <span class="post-nav-item">上一篇</span>
+                                    </span>
+                                </a>
+                            </div>
+                        
+                        
+                            <div class="next-post">
+                                <a class="next"
+                                   rel="next"
+                                   href="/2025/04/22/Frida-hook%E6%80%9D%E8%B7%AF%E6%80%BB%E7%BB%93/"
+                                   title="Frida hook思路备忘"
+                                >
+                                    <span class="title flex-center">
+                                        <span class="post-nav-title-item text-ellipsis">Frida hook思路备忘</span>
+                                        <span class="post-nav-item">下一篇</span>
+                                    </span>
+                                    <span class="right arrow-icon flex-center">
+                                        <i class="fas fa-chevron-right"></i>
+                                    </span>
+                                </a>
+                            </div>
+                        
+                    </div>
+                
+
+                
+                    
+
+
+
+
+
+
+                
+            </div>
+        </div>
+
+        
+            <div class="pc-post-toc right-toc">
+                <div class="post-toc-wrap border-box">
+    <div class="post-toc border-box">
+        <ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link"><span class="nav-text"></span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%8E%AF%E5%A2%83%E9%85%8D%E7%BD%AE"><span class="nav-text">环境配置</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#ts%E5%92%8Cjs%E6%9C%89%E5%93%AA%E4%BA%9B%E4%B8%8D%E5%90%8C%EF%BC%9F"><span class="nav-text">ts和js有哪些不同？</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#frida%E5%85%A5%E9%97%A8%E5%B0%8F%E7%BB%83%E4%B9%A0-%E7%AC%AC%E4%B8%80%E9%A2%98"><span class="nav-text">frida入门小练习-第一题</span></a></li></ol></li></ol></li></ol>
+    </div>
+</div>
+
+            </div>
+        
+    </div>
+</div>
+
+
+                
+            </div>
+        </div>
+
+        <div class="page-main-content-bottom border-box">
+            
+<footer class="footer border-box">
+    <div class="copyright-info info-item">
+        &copy;&nbsp;<span>2020</span>&nbsp;-&nbsp;2025
+        
+            &nbsp;<i class="fas fa-heart icon-animate"></i>&nbsp;&nbsp;<a href="/">Marce1</a>
+        
+    </div>
+
+    <div class="theme-info info-item">
+        由&nbsp;<a target="_blank" href="https://hexo.io">Hexo</a>&nbsp;驱动&nbsp;&&nbsp;主题&nbsp;<a class="keep-version" target="_blank" href="https://github.com/XPoet/hexo-theme-keep">Keep</a>
+    </div>
+
+    
+
+    
+        <div class="count-info info-item">
+            
+                <span class="count-item border-box word">
+                    <span class="item-type border-box">总字数</span>
+                    <span class="item-value border-box word">42.6k</span>
+                </span>
+            
+
+            
+                <span class="count-item border-box uv">
+                    <span class="item-type border-box">访客数</span>
+                    <span class="item-value border-box uv" id="busuanzi_value_site_uv"></span>
+                </span>
+            
+
+            
+                <span class="count-item border-box pv">
+                    <span class="item-type border-box">访问量</span>
+                    <span class="item-value border-box pv" id="busuanzi_value_site_pv"></span>
+                </span>
+            
+        </div>
+    
+
+    
+</footer>
+
+        </div>
+    </div>
+
+    <!-- post tools -->
+    
+        <div class="post-tools right-toc">
+            <div class="post-tools-container border-box">
+    <ul class="post-tools-list border-box">
+        <!-- PC encrypt again -->
+        
+
+        <!-- PC TOC show toggle -->
+        
+            <li class="tools-item flex-center toggle-show-toc">
+                <i class="fas fa-list"></i>
+            </li>
+        
+
+        <!-- PC go comment -->
+        
+
+        <!-- PC full screen -->
+        <li class="tools-item flex-center full-screen">
+            <i class="fa-solid fa-expand"></i>
+        </li>
+    </ul>
+</div>
+
+        </div>
+    
+
+    <!-- side tools -->
+    <div class="side-tools">
+        <div class="side-tools-container border-box ">
+    <ul class="side-tools-list side-tools-show-handle border-box">
+        <li class="tools-item tool-font-adjust-plus flex-center">
+            <i class="fas fa-search-plus"></i>
+        </li>
+
+        <li class="tools-item tool-font-adjust-minus flex-center">
+            <i class="fas fa-search-minus"></i>
+        </li>
+
+        <!-- toggle mode -->
+        
+            <li class="tools-item tool-toggle-theme-mode flex-center">
+                <i class="fas fa-moon"></i>
+            </li>
+        
+
+        <!-- rss -->
+        
+
+        <!-- to bottom -->
+        <li class="tools-item tool-scroll-to-bottom flex-center">
+            <i class="fas fa-arrow-down"></i>
+        </li>
+    </ul>
+
+    <ul class="exposed-tools-list border-box">
+        
+            <li class="tools-item toggle-show-toc-tablet flex-center">
+                <i class="fas fa-list"></i>
+            </li>
+        
+
+        
+
+        <li class="tools-item tool-toggle-show flex-center">
+            <i class="fas fa-cog fa-spin"></i>
+        </li>
+
+        <li class="tools-item tool-scroll-to-top flex-center show-arrow">
+            <i class="arrow fas fa-arrow-up"></i>
+            <span class="percent"></span>
+        </li>
+    </ul>
+</div>
+
+    </div>
+
+    <!-- image mask -->
+    <div class="zoom-in-image-mask">
+    <img class="zoom-in-image">
+</div>
+
+
+    <!-- local search -->
+    
+        <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+          <span class="search-input-field-pre">
+            <i class="fas fa-keyboard"></i>
+          </span>
+            <div class="search-input-container">
+                <input autocomplete="off"
+                       autocorrect="off"
+                       autocapitalize="off"
+                       placeholder="搜索..."
+                       spellcheck="false"
+                       type="search"
+                       class="search-input"
+                >
+            </div>
+            <span class="close-popup-btn">
+                <i class="fas fa-times"></i>
+            </span>
+        </div>
+        <div id="search-result">
+            <div id="no-result">
+                <i class="fas fa-spinner fa-pulse fa-5x fa-fw"></i>
+            </div>
+        </div>
+    </div>
+</div>
+
+    
+
+    <!-- tablet toc -->
+    
+        <div class="tablet-post-toc-mask">
+            <div class="tablet-post-toc">
+                <div class="post-toc-wrap border-box">
+    <div class="post-toc border-box">
+        <ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link"><span class="nav-text"></span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%8E%AF%E5%A2%83%E9%85%8D%E7%BD%AE"><span class="nav-text">环境配置</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#ts%E5%92%8Cjs%E6%9C%89%E5%93%AA%E4%BA%9B%E4%B8%8D%E5%90%8C%EF%BC%9F"><span class="nav-text">ts和js有哪些不同？</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#frida%E5%85%A5%E9%97%A8%E5%B0%8F%E7%BB%83%E4%B9%A0-%E7%AC%AC%E4%B8%80%E9%A2%98"><span class="nav-text">frida入门小练习-第一题</span></a></li></ol></li></ol></li></ol>
+    </div>
+</div>
+
+            </div>
+        </div>
+    
+</main>
+
+
+
+
+
+<!-- common js -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/hexo-theme-keep/4.2.3/js/utils.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/hexo-theme-keep/4.2.3/js/header-shrink.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/hexo-theme-keep/4.2.3/js/back2top.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/hexo-theme-keep/4.2.3/js/toggle-theme.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/hexo-theme-keep/4.2.3/js/code-block.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/hexo-theme-keep/4.2.3/js/main.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/hexo-theme-keep/4.2.3/js/libs/anime.min.js"></script>
+
+<!-- local search -->
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/hexo-theme-keep/4.2.3/js/local-search.min.js"></script>
+
+
+<!-- lazyload -->
+
+
+<div class="pjax">
+    <!-- home page -->
+    
+
+    <!-- post page -->
+    
+        <!-- post-helper -->
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/hexo-theme-keep/4.2.3/js/post/post-helper.min.js"></script>
+
+        <!-- toc -->
+        
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/hexo-theme-keep/4.2.3/js/post/toc.min.js"></script>
+        
+
+        <!-- copyright-info -->
+        
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/hexo-theme-keep/4.2.3/js/post/copyright-info.min.js"></script>
+        
+
+        <!-- share -->
+        
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/hexo-theme-keep/4.2.3/js/post/share.min.js"></script>
+        
+    
+
+    <!-- categories page -->
+    
+
+    <!-- links page -->
+    
+
+    <!-- photos page -->
+    
+
+    <!-- tools page -->
+    
+</div>
+
+<!-- mermaid -->
+
+
+<!-- pjax -->
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/hexo-theme-keep/4.2.3/js/libs/pjax.min.js"></script>
+<script>
+    window.addEventListener('DOMContentLoaded', () => {
+        window.pjax = new Pjax({
+            selectors: [
+                'head title',
+                '.page-container',
+                '.pjax'
+            ],
+            history: true,
+            debug: false,
+            cacheBust: false,
+            timeout: 0,
+            analytics: false,
+            currentUrlFullReload: false,
+            scrollRestoration: false,
+        });
+
+        document.addEventListener('pjax:send', () => {
+            KEEP.utils.pjaxProgressBarStart()
+        });
+
+        document.addEventListener('pjax:complete', () => {
+            KEEP.utils.pjaxProgressBarEnd()
+            window.pjax.executeScripts(document.querySelectorAll('script[data-pjax], .pjax script'))
+            KEEP.initExecute()
+        });
+    });
+</script>
+
+
+
+
+</body>
+</html>

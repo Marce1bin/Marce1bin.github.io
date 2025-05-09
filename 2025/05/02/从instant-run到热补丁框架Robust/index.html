@@ -1,0 +1,909 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <meta name="keywords" content="pwn, ctf, pwnable, ctfwriteup, writeup, essays, 题解">
+    <meta name="description" content="Marce1&#39;s blog">
+    <meta name="author" content="Marce1">
+    
+    <title>
+        
+            从instant run到热补丁框架Robust |
+        
+        Marce1&#39;s Blog
+    </title>
+    
+<link rel="stylesheet" href="/css/style.css">
+
+    
+        <link rel="shortcut icon" href="/images/Marce1_2.svg">
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/hexo-theme-keep/4.2.3/font/css/fontawesome.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/hexo-theme-keep/4.2.3/font/css/regular.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/hexo-theme-keep/4.2.3/font/css/solid.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/hexo-theme-keep/4.2.3/font/css/brands.min.css">
+    
+    <script class="keep-theme-configurations">
+    const KEEP = window.KEEP || {}
+    KEEP.hexo_config = {"hostname":"marce1bin.github.io","root":"/","language":"zh-CN","path":"search.json"}
+    KEEP.theme_config = {"base_info":{"primary_color":"#0066cc","title":"Marce1's Blog","author":"Marce1","avatar":"/images/Marce1_2.svg","logo":"/images/Marce1_2.svg","favicon":"/images/Marce1_2.svg"},"menu":{"home":"/                        || fa-solid fa-house","archives":"/archives           || fa-solid fa-book","tags":"/tags                 || fa-solid fa-tags","categories":"/categories     || fa-solid fa-layer-group","about":"/about              || fa-solid fa-user-graduate"},"first_screen":{"enable":true,"background_img":"/images/bg.svg","background_img_dark":"/images/bg.svg","description":"取乎其上，得乎其中；取乎其中，得乎其下；取乎其下，则无所得矣。","hitokoto":false},"social_contact":{"enable":false,"links":{"github":null,"weixin":"img | /images/weixin.PNG","qq":"img | /images/qq.PNG","weibo":null,"zhihu":null,"twitter":null,"x":null,"facebook":null,"email":null}},"scroll":{"progress_bar":true,"percent":false,"hide_header":true},"home":{"announcement":null,"category":true,"tag":true,"post_datetime":"updated"},"post":{"author_badge":{"enable":false,"level_badge":false,"custom_badge":["One","Two","Three"]},"word_count":{"wordcount":true,"min2read":true},"datetime_format":"YYYY-MM-DD HH:mm:ss","copyright_info":true,"share":true,"reward":{"enable":false,"img_link":null,"text":null,"icon":null}},"code_block":{"tools":{"enable":true,"style":"default"},"highlight_theme":"default"},"toc":{"enable":true,"number":false,"expand_all":true,"init_open":true,"layout":"right"},"website_count":{"busuanzi_count":{"enable":true,"site_uv":true,"site_pv":true,"page_pv":true}},"local_search":{"enable":true,"preload":true},"comment":{"enable":false,"use":"valine","valine":{"appid":null,"appkey":null,"server_urls":null,"placeholder":null},"gitalk":{"github_id":null,"github_admins":null,"repository":null,"client_id":null,"client_secret":null,"proxy":null},"twikoo":{"env_id":null,"region":null,"version":"1.6.36"},"waline":{"server_url":null,"reaction":false,"version":"3.2.1"},"giscus":{"repo":null,"repo_id":null,"category":"Announcements","category_id":null,"reactions_enabled":false},"artalk":{"server":null},"disqus":{"shortname":null}},"rss":{"enable":false},"lazyload":{"enable":false},"cdn":{"enable":true,"provider":"cdnjs"},"pjax":{"enable":true},"footer":{"since":2020,"word_count":true,"site_deploy":{"enable":false,"provider":"github","url":null},"record":{"enable":false,"list":[{"code":null,"link":null}]}},"inject":{"enable":false,"css":[null],"js":[null]},"root":"","source_data":{},"version":"4.2.3"}
+    KEEP.language_ago = {"second":"%s 秒前","minute":"%s 分钟前","hour":"%s 小时前","day":"%s 天前","week":"%s 周前","month":"%s 个月前","year":"%s 年前"}
+    KEEP.language_code_block = {"copy":"复制代码","copied":"已复制","fold":"折叠代码块","folded":"已折叠"}
+    KEEP.language_copy_copyright = {"copy":"复制版权信息","copied":"已复制","title":"原文标题","author":"原文作者","link":"原文链接"}
+  </script>
+<meta name="generator" content="Hexo 7.3.0"></head>
+
+
+<body>
+<div class="progress-bar-container">
+    
+        <span class="scroll-progress-bar"></span>
+    
+
+    
+        <span class="pjax-progress-bar"></span>
+        <i class="pjax-progress-icon fas fa-circle-notch fa-spin"></i>
+    
+</div>
+
+
+
+<main class="page-container border-box">
+    <!-- home first screen  -->
+    
+
+    <!-- page content -->
+    <div class="page-main-content border-box">
+        <div class="page-main-content-top">
+            
+<header class="header-wrapper">
+
+    <div class="border-box header-content">
+        <div class="left flex-start border-box">
+            
+                <a class="logo-image border-box" href="/">
+                    <img src="/images/Marce1_2.svg">
+                </a>
+            
+            <a class="site-name border-box" href="/">
+               Marce1&#39;s Blog
+            </a>
+        </div>
+
+        <div class="right border-box">
+            <div class="pc border-box">
+                <ul class="menu-list border-box">
+                    
+                        
+                        <li class="menu-item flex-start border-box">
+                            <a class="menu-text-color border-box" href="/">
+                                
+                                    <i class="menu-text-color menu-icon fa-solid fa-house"></i>
+                                
+                                首页
+                                
+                            </a>
+                            
+                        </li>
+                    
+                        
+                        <li class="menu-item flex-start border-box">
+                            <a class="menu-text-color border-box" href="/archives">
+                                
+                                    <i class="menu-text-color menu-icon fa-solid fa-book"></i>
+                                
+                                归档
+                                
+                            </a>
+                            
+                        </li>
+                    
+                        
+                        <li class="menu-item flex-start border-box">
+                            <a class="menu-text-color border-box" href="/tags">
+                                
+                                    <i class="menu-text-color menu-icon fa-solid fa-tags"></i>
+                                
+                                标签
+                                
+                            </a>
+                            
+                        </li>
+                    
+                        
+                        <li class="menu-item flex-start border-box">
+                            <a class="menu-text-color border-box" href="/categories">
+                                
+                                    <i class="menu-text-color menu-icon fa-solid fa-layer-group"></i>
+                                
+                                分类
+                                
+                            </a>
+                            
+                        </li>
+                    
+                        
+                        <li class="menu-item flex-start border-box">
+                            <a class="menu-text-color border-box" href="/about">
+                                
+                                    <i class="menu-text-color menu-icon fa-solid fa-user-graduate"></i>
+                                
+                                关于
+                                
+                            </a>
+                            
+                        </li>
+                    
+                    
+                        <li class="menu-item search search-popup-trigger">
+                            <i class="menu-text-color fas search fa-search"></i>
+                        </li>
+                    
+                </ul>
+            </div>
+            <div class="mobile border-box flex-start">
+                
+                    <div class="icon-item search search-popup-trigger"><i class="fas fa-search"></i></div>
+                
+                <div class="icon-item menu-bar">
+                    <div class="menu-bar-middle"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="header-drawer">
+        <ul class="drawer-menu-list border-box">
+            
+                
+                <li class="drawer-menu-item border-box not-sub-menu">
+                    <label class="drawer-menu-label border-box">
+                        <a class="drawer-menu-text-color left-side flex-start border-box" href="/">
+                            
+                                <span class="menu-icon-wrap border-box flex-center">
+                                    <i class="drawer-menu-text-color menu-icon fa-solid fa-house"></i>
+                                </span>
+                            
+                            首页
+                        </a>
+                        
+                    </label>
+                    
+                </li>
+            
+                
+                <li class="drawer-menu-item border-box not-sub-menu">
+                    <label class="drawer-menu-label border-box">
+                        <a class="drawer-menu-text-color left-side flex-start border-box" href="/archives">
+                            
+                                <span class="menu-icon-wrap border-box flex-center">
+                                    <i class="drawer-menu-text-color menu-icon fa-solid fa-book"></i>
+                                </span>
+                            
+                            归档
+                        </a>
+                        
+                    </label>
+                    
+                </li>
+            
+                
+                <li class="drawer-menu-item border-box not-sub-menu">
+                    <label class="drawer-menu-label border-box">
+                        <a class="drawer-menu-text-color left-side flex-start border-box" href="/tags">
+                            
+                                <span class="menu-icon-wrap border-box flex-center">
+                                    <i class="drawer-menu-text-color menu-icon fa-solid fa-tags"></i>
+                                </span>
+                            
+                            标签
+                        </a>
+                        
+                    </label>
+                    
+                </li>
+            
+                
+                <li class="drawer-menu-item border-box not-sub-menu">
+                    <label class="drawer-menu-label border-box">
+                        <a class="drawer-menu-text-color left-side flex-start border-box" href="/categories">
+                            
+                                <span class="menu-icon-wrap border-box flex-center">
+                                    <i class="drawer-menu-text-color menu-icon fa-solid fa-layer-group"></i>
+                                </span>
+                            
+                            分类
+                        </a>
+                        
+                    </label>
+                    
+                </li>
+            
+                
+                <li class="drawer-menu-item border-box not-sub-menu">
+                    <label class="drawer-menu-label border-box">
+                        <a class="drawer-menu-text-color left-side flex-start border-box" href="/about">
+                            
+                                <span class="menu-icon-wrap border-box flex-center">
+                                    <i class="drawer-menu-text-color menu-icon fa-solid fa-user-graduate"></i>
+                                </span>
+                            
+                            关于
+                        </a>
+                        
+                    </label>
+                    
+                </li>
+            
+        </ul>
+    </div>
+
+    <div class="window-mask"></div>
+
+</header>
+
+
+        </div>
+
+        <div class="page-main-content-middle border-box">
+
+            <div class="main-content border-box">
+                
+
+                    
+<div class="fade-in-down-animation">
+    <div class="post-page-container border-box">
+        <div class="post-content-container border-box">
+            
+
+            <div class="post-content-bottom border-box">
+                
+                    <div class="post-title">
+                        从instant run到热补丁框架Robust
+                    </div>
+                
+
+                
+                    <div class="post-header border-box">
+                        
+                            <div class="avatar-box border-box">
+                                <img src="/images/Marce1_2.svg">
+                            </div>
+                        
+                        <div class="info-box">
+                            <div class="author border-box">
+                                <span class="name">Marce1</span>
+                                
+                            </div>
+                            <div class="meta-info border-box">
+                                
+
+<div class="post-meta-info-container border-box post">
+    <div class="post-meta-info border-box">
+        
+
+        
+            <span class="meta-info-item post-create-date">
+                <i class="icon fa-solid fa-calendar-plus"></i>&nbsp;
+                <span class="datetime">2025-05-02 16:44:41</span>
+            </span>
+
+            <span class="meta-info-item post-update-date">
+                <i class="icon fa-solid fa-file-pen"></i>&nbsp;
+                <span class="datetime" data-updated="Fri May 09 2025 23:03:35 GMT+0800">2025-05-09 23:03:35</span>
+            </span>
+        
+
+        
+
+        
+            <span class="post-tag meta-info-item border-box">
+                <ul class="post-tag-ul">
+                    
+                            <li class="tag-item"><span class="tag-separator"><i class="icon fas fa-hashtag"></i></span><a href="/tags/to-do-list/">to_do_list</a></li>
+                        
+                    
+                            <li class="tag-item"><span class="tag-separator"><i class="icon fas fa-hashtag"></i></span><a href="/tags/android/">android</a></li>
+                        
+                    
+                </ul>
+            </span>
+        
+
+        
+        
+            <span class="meta-info-item post-wordcount">
+                <i class="icon fas fa-file-word"></i>&nbsp;<span>5.5k 字</span>
+            </span>
+        
+        
+            <span class="meta-info-item post-min2read">
+                <i class="icon fas fa-clock"></i>&nbsp;<span>21 分钟</span>
+            </span>
+        
+        
+            <span class="meta-info-item post-pv">
+                <i class="icon fas fa-eye"></i>&nbsp;<span id="busuanzi_value_page_pv"></span>
+            </span>
+        
+    </div>
+
+    
+</div>
+
+                            </div>
+                        </div>
+                    </div>
+                
+
+                <div class="post-content keep-markdown-body ">
+                    
+
+                    
+                         <h2 id="这是什么？"><a href="#这是什么？" class="headerlink" title="这是什么？"></a>这是什么？</h2><p>这两天在看有关于动态加载Dex hook的时候看到了一个很有意思的题，不仅代码分析量大，而且发现了大量的第三方库，甚至连wp的分析思路都看不懂。从一篇wp中得知这个题目和热补丁技术有关，了解之后觉得这个方面的思路和一些hook的实现很有相似之处，于是决定更多深入一些常见的热补丁修复手段。</p>
+<h2 id="一些常见的热补丁思路"><a href="#一些常见的热补丁思路" class="headerlink" title="一些常见的热补丁思路"></a>一些常见的热补丁思路</h2><h3 id="基于方法替换的-Hook——xposed框架"><a href="#基于方法替换的-Hook——xposed框架" class="headerlink" title="基于方法替换的 Hook——xposed框架"></a>基于方法替换的 Hook——xposed框架</h3><p>dexposed基于于有名的xposed开源项目，是阿里淘宝使用的热补丁方案</p>
+<p>只不过这个东西比较古早了，还是delvik虚拟机环境下的产物，之后也停止维护，对art的支持并不完善。dvm时代的很多机制和现在的主流框架都不一样了，但是还是学习一下</p>
+<p><strong>1、xposed前情提要</strong></p>
+<p>如果了解过安卓应用的启动过程，应该会对zygote对新进程的孵化有一点印象：zygote是所有安卓应用进程的母进程，由init进程创建，在zygote启动时，他会预先加载安卓框架的公共资源，给所有应用共用——当启动一个应用时，zygote不会重新初始化进程，而是通过 fork()复制一个自身的进程，将自身的内存空间共享给新启动的应用进程，这样子既减少了加载共用资源的开销，也保证了各个应用之间初始化环境一致。</p>
+<p>dexposed基于Xposed框架，简单介绍完zygote之后，xposed的热补丁方案就很容易理解了。正如之前所说，zygote会在每个应用进程孵化时共享java运行时库，那假如说我们让app_process（启动zygote的可执行程序）加载一个XposedBridge，他就会出现在每一个安卓应用程序中，从而实现对zygote进程和Dalvik虚拟机的控制。</p>
+<blockquote>
+<p>XposedBridge有一个私有的Native（JNI）方法hookMethodNative，这个方法也在app_process中使用。这个函数提供一个方法对象利用Java的Reflection机制来对内置方法覆写。</p>
+</blockquote>
+<p>当然，Xposed的实现前提是需要root，并且会影响所有的app。</p>
+<p><strong>2、关于dexposed</strong></p>
+<p>把大象放进冰箱需要三步，同样dexposed的热补丁修复也可以概括为三步：找到需要替换的目标方法，处理方法（将java方法转换为native方法），回调java层处理。</p>
+<p>第一步，找到目标方法对象。</p>
+<p>已知要修改的方法类名和方法名，用反射就能找到method（findMethodExact方法），为了方便后续的操作，将方法的属性改为可访问。但是dexposed的思路是替换调用方法的指针，只找到方法是不够的，我们需要直接操作与虚拟机内部数据结构相关的信息，方法的对象本身。通过反射获取的method只是java层面的抽象，通过一系列的java api来操作，我们需要接触更加底层的数据结构。</p>
+<p>dalvik虚拟机中对对象的引用管理采用了直接引用和间接引用两种方式，间接引用主要是为了支持垃圾回收机制，在移动对象在内存中的位置后可以通过修改间接指向对象的中间结构指针来保证引用有效。java层传递的对象大多是间接引用，具体通过<code>dvmDecodeIndirectRef</code> 函数把间接引用转换为实际的ClassObject对象。</p>
+<p>但ClassObject也不是我们最终的目的，dalvik虚拟机中维护着一个class方法表，保存了一个包含每个方法的数组，通过ClassObject可以知道对应Method对象在class方法表中的偏移slot，最后调用该方法。</p>
+<blockquote>
+<p>方法表中的方法数组是更加底层的概念。在 Java 虚拟机中，每个类都有对应的方法表，方法表是一个结构体数组，每个结构体代表一个方法，包含了该类所有的方法信息，如方法的名称、参数类型、返回值类型、方法的字节码等。</p>
+<p>在之后的art中每个类也有对应的方法表，用来存储类中定义的方法信息，包含了各种方法的元数据。</p>
+</blockquote>
+<p>第二步，修改非native方法为native方法。</p>
+<p>在方法表中还有一个指向实际方法实现的指针， 按理说修改了这个指针指向我们修复过的方法就能完成hook。但是java层有严格的访问控制机制，而native层更接近底层，有更强大的权限来操作内存和控制程序的执行流程，能更方便的实现方法的劫持。</p>
+<p>dexposed通过hookMethodNative函数将方法标记为native，并将方法表结构体中的nativeFunc指针指向dexposedCallHandler函数。<u>在原方法被调用时，实际调用的就是dexposedCallHandler函数</u></p>
+<p><img   src="C:\Users\彬彬\Desktop\HEXO-blog\source_posts\从instant-run到热补丁框架Robust\89f374c9899a96911bf66a6d72438b3ctplv-t2oaga2asx-jj-mark3024000q75.png"  alt="img"></p>
+<p>hookMethodNative还做了一件事：保存原始方法的相关信息，存放在DexposedHookInfo结构体中，后续如果有需要想调用原始方法的逻辑，就可以依据保存的信息实现。</p>
+<p>第三步，回调java层调用</p>
+<p>dexposedCallHandler函数主要做了两件事：</p>
+<ul>
+<li>获取刚刚构造的DexposedInfo信息</li>
+<li>调用Java层DexposedBridge.java中的handleHookedMethod方法</li>
+</ul>
+<p>handleHookedMethod就是Dexposed框架中Java层最核心的一个方法，他主要做了三件事：</p>
+<ul>
+<li>执行需要hook之前的所有回调方法beforeMethod</li>
+<li>通过invokeOriginalMethodNative执行被hook的原生方法</li>
+<li>执行需要hook之后的所有回调方法afterMethod</li>
+</ul>
+<p><img   src="C:\Users\彬彬\Desktop\HEXO-blog\source_posts\从instant-run到热补丁框架Robust\d2f5c63ec195b8745f91fe08fab6b978tplv-t2oaga2asx-jj-mark3024000q75-1746620584230-11.png"  alt="img"></p>
+<p>其中执行原生方法是可选的：如果想要完全替换，可以不调用原来的java方法。beforeMethod和afterMethod都是开发者自定义的，其中beforeMethod会默认调用replaceHookedMethod，我们通过实现它来代替原方法的调用；除此之外，beforeMethod允许开发者在原方法执行前进行一些准备工作或条件判断等操作，afterMethod允许开发者在这个阶段进行一些清理工作、结果处理或数据统计等操作。</p>
+<p><strong>3、dexposed总结</strong></p>
+<blockquote>
+<p>从<a class="link"   target="_blank" rel="noopener" href="https://zhida.zhihu.com/search?content_id=27974950&content_type=Answer&match_order=1&q=AOP&zhida_source=entity" >AOP<i class="fas fa-external-link-alt"></i></a>的角度来看，这是效率的大幅度提升。首先它不需要任何编译器的插桩或者代码改写，对正常运行不引入任何性能开销。这是<a class="link"   target="_blank" rel="noopener" href="https://zhida.zhihu.com/search?content_id=27974950&content_type=Answer&match_order=1&q=AspectJ&zhida_source=entity" >AspectJ<i class="fas fa-external-link-alt"></i></a>之类的框架没法比拟的优势。其次，对所改写方法的性能开销也极低（微秒级），基本可以忽略不计。这就决定了它是一个不可多得的AOP解决方案，虽然仅限Android下，而且有些限制和兼容性制约。</p>
+<p>作者：Oasis Feng<br>链接：<a class="link"   target="_blank" rel="noopener" href="https://www.zhihu.com/question/31894163/answer/81365637" >https://www.zhihu.com/question/31894163/answer/81365637<i class="fas fa-external-link-alt"></i></a><br>来源：知乎<br>著作权归作者所有。商业转载请联系作者获得授权，非商业转载请注明出处。</p>
+</blockquote>
+<p>dexposed的思路总的来说就是通过劫持java虚拟机中class表中的方法入口来实现对方法的修改&#x2F;替换。与它的先辈xposed相比，它无需hook，<strong>先后通过反射机制、间接引用转换、偏移访问方法表来获取方法调用指针，将该方法的类型改变为<code>native</code>并且链接到一个通用的 Native Dispatch 方法完成热补丁修复。</strong></p>
+<p>然而到了android5.0，ART替换Dalvik成了唯一的运行时环境，dexposed的思路就变得困难：</p>
+<ul>
+<li>art环境中方法内联优化会将方法的代码直接嵌入调用它的方法中，这让替换方法入口的hook方式不再可行</li>
+<li>后续引入了aot和jit机制，aot将dex文件预编译成机器码，但是dexposed基于dalvik的hook机制对方法的动态修改是基于字节码进行的，直接修改变得困难；jit则会导致方法入口不固定，跑着跑着入口就变了</li>
+<li>除此之外还有很多很多问题，每一个安卓版本的ART变化都是天翻地覆，这使得dexposed对新安卓版本的支持愈发难以支持</li>
+</ul>
+<p><strong>4、dexposed之后——andfix</strong></p>
+<p>但是尽管如此，还是有为dexposed续命的尝试：</p>
+<p><a class="link"   target="_blank" rel="noopener" href="https://weishu.me/2017/11/23/dexposed-on-art/" >https://weishu.me/2017/11/23/dexposed-on-art/<i class="fas fa-external-link-alt"></i></a></p>
+<p>在dexposed正式开源之后，阿里巴巴后脚又开发了一个热修复工具：andfix。andfix的实现原理和dexposed及其相像，同样是通过替换方法结构体来实现hook，但是比dexposed更加彻底，后者是仅仅替换方法入口nativefunc，而前者会通过memcpy直接复制ArtMethod结构体的所有字节，确保补丁方法的结构体和原方法完全一致。</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">extern</span> <span class="type">void</span> __attribute__ ((<span class="built_in">visibility</span> (<span class="string">&quot;hidden&quot;</span>))) <span class="built_in">dalvik_replaceMethod</span>(</span><br><span class="line">		JNIEnv* env, jobject src, jobject dest) &#123;</span><br><span class="line">	<span class="comment">//clazz为被替换的类</span></span><br><span class="line">	jobject clazz = env-&gt;<span class="built_in">CallObjectMethod</span>(dest, jClassMethod);</span><br><span class="line">	<span class="comment">//clz 为被替换的类对象</span></span><br><span class="line">	ClassObject* clz = (ClassObject*) <span class="built_in">dvmDecodeIndirectRef_fnPtr</span>(</span><br><span class="line">			<span class="built_in">dvmThreadSelf_fnPtr</span>(), clazz);</span><br><span class="line">	<span class="comment">//将类状态设置为装载完毕</span></span><br><span class="line">	clz-&gt;status = CLASS_INITIALIZED;</span><br><span class="line">	<span class="comment">//得到指向新方法的指针</span></span><br><span class="line">	Method* meth = (Method*) env-&gt;<span class="built_in">FromReflectedMethod</span>(src);</span><br><span class="line">	<span class="comment">//得到指向需要修复的目标方法的指针</span></span><br><span class="line">	Method* target = (Method*) env-&gt;<span class="built_in">FromReflectedMethod</span>(dest);</span><br><span class="line">	</span><br><span class="line">	<span class="comment">//新方法指向目标方法，实现方法的替换</span></span><br><span class="line">	meth-&gt;clazz = target-&gt;clazz;</span><br><span class="line">	meth-&gt;accessFlags |= ACC_PUBLIC;</span><br><span class="line">	meth-&gt;methodIndex = target-&gt;methodIndex;</span><br><span class="line">	meth-&gt;jniArgInfo = target-&gt;jniArgInfo;</span><br><span class="line">	meth-&gt;registersSize = target-&gt;registersSize;</span><br><span class="line">	meth-&gt;outsSize = target-&gt;outsSize;</span><br><span class="line">	meth-&gt;insSize = target-&gt;insSize;</span><br><span class="line">	meth-&gt;prototype = target-&gt;prototype;</span><br><span class="line">	meth-&gt;insns = target-&gt;insns;</span><br><span class="line">	meth-&gt;nativeFunc = target-&gt;nativeFunc;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>更值得一提的是，andfix支持art，在art中它会修改对应的ArtMethod结构体和entry_point_from_quick_compiled_code入口指针。</p>
+<p>相比dexposed，andifx专注于紧急bug修复，更加轻便，而dexposed则着重于线上调试，比如方法埋点、逆向分析、方法前后调整。</p>
+<p>但是作为native解决方案，始终存在着稳定性与art兼容性问题。dexposed和andfix上一次更新都已经是10年前的事了。</p>
+<h3 id="从instantrun到robust"><a href="#从instantrun到robust" class="headerlink" title="从instantrun到robust"></a>从instantrun到robust</h3><p><strong>1、从instantRun开始说起</strong></p>
+<p>如果说dexposed是Native流派的，InstantRun和接下来要说的robust就是Java流派。</p>
+<p>InstantRun是android studio 2.0 stable集成的即时编译技术。可以依据代码修改的程度和类型进行合适的模式对应用进行更新，加快了修改代码后的部署时间和开发效率。在对代码修改程度小时，甚至可以立即生效，不用重启Activity或者应用。</p>
+<p>InstantRun是通过插桩技术实现的。</p>
+<blockquote>
+<p>关于插桩技术，此事在csapp中亦有提及。</p>
+<p>如果你读过csapp的链接部分应该有一点印象，其中提到的库打桩技术就是一种插桩。库打桩可以通过创建一个和目标函数一模一样的包装函数，来欺骗系统调用包装函数而不是目标函数</p>
+</blockquote>
+<p>插桩的概念则更为广泛，通过针对编译后字节码插入额外的代码逻辑（让我想起了frida inline的实现原理，同样也是在字节码的汇编层面更改对代码实现劫持）来添加额外的功能，比如统计代码执行次数和执行时间，还有实现应用的热修复和动态更新。</p>
+<p>和前文的替换方法的思路相比较，如果我们预先在代码中设置判断：如果没有更改代码片段，则执行原逻辑；如果更改了代码，则执行我们的自定义逻辑，这样子是不是就不用担心方法入口的种种问题了？</p>
+<p>由此我们可以提出两个问题：在不打断程序执行的情况下，这个判断的字段如何于我们修改了代码之后被更改？进入了我们自定义逻辑的代码段，如何把我们修复过后的代码“塞”进正在执行的程序？解决了这两个问题，就能理解instantrun的核心思路了。</p>
+<p>来看这个例子（取自<a class="link"   target="_blank" rel="noopener" href="https://juejin.cn/post/6844903945991618573" >深入理解Instant Run——原理篇Instant-run是Android Studio 2.0开始引入的新特性，它 - 掘金<i class="fas fa-external-link-alt"></i></a>）</p>
+<p>这是原正常编译的activity：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> com.example.wuyi.instantruntest;</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> android.app.Activity;</span><br><span class="line"><span class="keyword">import</span> android.os.Bundle;</span><br><span class="line"><span class="keyword">import</span> android.view.View;</span><br><span class="line"><span class="keyword">import</span> android.view.View.OnClickListener;</span><br><span class="line"><span class="keyword">import</span> android.widget.TextView;</span><br><span class="line"><span class="keyword">import</span> android.widget.Toast;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">MainActivity</span> <span class="keyword">extends</span> <span class="title class_">Activity</span> <span class="keyword">implements</span> <span class="title class_">OnClickListener</span> &#123;</span><br><span class="line">    <span class="keyword">private</span> TextView mTv;</span><br><span class="line">    <span class="keyword">private</span> <span class="type">int</span> <span class="variable">count</span> <span class="operator">=</span> <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="title function_">MainActivity</span><span class="params">()</span> &#123;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">protected</span> <span class="keyword">void</span> <span class="title function_">onCreate</span><span class="params">(Bundle savedInstanceState)</span> &#123;</span><br><span class="line">        <span class="built_in">super</span>.onCreate(savedInstanceState);</span><br><span class="line">        <span class="built_in">this</span>.mTv = <span class="keyword">new</span> <span class="title class_">TextView</span>(<span class="built_in">this</span>);</span><br><span class="line">        <span class="built_in">this</span>.mTv.setText(<span class="string">&quot;click me!&quot;</span>);</span><br><span class="line">        <span class="built_in">this</span>.mTv.setOnClickListener(<span class="built_in">this</span>);</span><br><span class="line">        <span class="built_in">this</span>.setContentView(<span class="built_in">this</span>.mTv);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">void</span> <span class="title function_">toBeFix</span><span class="params">()</span> &#123;</span><br><span class="line">        Toast.makeText(<span class="built_in">this</span>, <span class="string">&quot;origin count: &quot;</span> + <span class="built_in">this</span>.count, <span class="number">0</span>).show();</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">onClick</span><span class="params">(View v)</span> &#123;</span><br><span class="line">        <span class="built_in">this</span>.toBeFix();</span><br><span class="line">        ++<span class="built_in">this</span>.count;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<p>这是instantrun进行插桩处理过后的activity：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> com.example.wuyi.instantruntest;</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> android.app.Activity;</span><br><span class="line"><span class="keyword">import</span> android.os.Bundle;</span><br><span class="line"><span class="keyword">import</span> android.view.View;</span><br><span class="line"><span class="keyword">import</span> android.view.View.OnClickListener;</span><br><span class="line"><span class="keyword">import</span> android.widget.TextView;</span><br><span class="line"><span class="keyword">import</span> android.widget.Toast;</span><br><span class="line"><span class="keyword">import</span> com.android.tools.ir.runtime.IncrementalChange;</span><br><span class="line"><span class="keyword">import</span> com.android.tools.ir.runtime.InstantReloadException;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">MainActivity</span> <span class="keyword">extends</span> <span class="title class_">Activity</span> <span class="keyword">implements</span> <span class="title class_">OnClickListener</span> &#123;</span><br><span class="line">    <span class="keyword">private</span> TextView mTv;</span><br><span class="line">    <span class="keyword">private</span> <span class="type">int</span> count;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">final</span> <span class="type">long</span> <span class="variable">serialVersionUID</span> <span class="operator">=</span> -<span class="number">3671979505056694483L</span>;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">volatile</span> <span class="keyword">transient</span> com.android.tools.ir.runtime.IncrementalChange $change;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="title function_">MainActivity</span><span class="params">()</span> &#123;</span><br><span class="line">        <span class="type">IncrementalChange</span> <span class="variable">var1</span> <span class="operator">=</span> $change;</span><br><span class="line">        <span class="keyword">if</span> (var1 != <span class="literal">null</span>) &#123;</span><br><span class="line">            Object[] var10001 = (Object[])var1.access$dispatch(<span class="string">&quot;init$args.([Lcom/example/wuyi/instantruntest/MainActivity;[Ljava/lang/Object;)Ljava/lang/Object;&quot;</span>, <span class="keyword">new</span> <span class="title class_">Object</span>[]&#123;<span class="literal">null</span>, <span class="keyword">new</span> <span class="title class_">Object</span>[<span class="number">0</span>]&#125;);</span><br><span class="line">            Object[] var2 = (Object[])var10001[<span class="number">0</span>];</span><br><span class="line">            <span class="built_in">this</span>(var10001, (InstantReloadException)<span class="literal">null</span>);</span><br><span class="line">            var2[<span class="number">0</span>] = <span class="built_in">this</span>;</span><br><span class="line">            var1.access$dispatch(<span class="string">&quot;init$body.(Lcom/example/wuyi/instantruntest/MainActivity;[Ljava/lang/Object;)V&quot;</span>, var2);</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            <span class="built_in">super</span>();</span><br><span class="line">            <span class="built_in">this</span>.count = <span class="number">0</span>;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">onCreate</span><span class="params">(Bundle savedInstanceState)</span> &#123;</span><br><span class="line">        <span class="type">IncrementalChange</span> <span class="variable">var2</span> <span class="operator">=</span> $change;</span><br><span class="line">        <span class="keyword">if</span> (var2 != <span class="literal">null</span>) &#123;</span><br><span class="line">            var2.access$dispatch(<span class="string">&quot;onCreate.(Landroid/os/Bundle;)V&quot;</span>, <span class="keyword">new</span> <span class="title class_">Object</span>[]&#123;<span class="built_in">this</span>, savedInstanceState&#125;);</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            <span class="built_in">super</span>.onCreate(savedInstanceState);</span><br><span class="line">            <span class="built_in">this</span>.mTv = <span class="keyword">new</span> <span class="title class_">TextView</span>(<span class="built_in">this</span>);</span><br><span class="line">            <span class="built_in">this</span>.mTv.setText(<span class="string">&quot;click me!&quot;</span>);</span><br><span class="line">            <span class="built_in">this</span>.mTv.setOnClickListener(<span class="built_in">this</span>);</span><br><span class="line">            <span class="built_in">this</span>.setContentView(<span class="built_in">this</span>.mTv);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">void</span> <span class="title function_">toBeFix</span><span class="params">()</span> &#123;</span><br><span class="line">        <span class="type">IncrementalChange</span> <span class="variable">var1</span> <span class="operator">=</span> $change;</span><br><span class="line">        <span class="keyword">if</span> (var1 != <span class="literal">null</span>) &#123;</span><br><span class="line">            var1.access$dispatch(<span class="string">&quot;toBeFix.()V&quot;</span>, <span class="keyword">new</span> <span class="title class_">Object</span>[]&#123;<span class="built_in">this</span>&#125;);</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            Toast.makeText(<span class="built_in">this</span>, <span class="string">&quot;origin count: &quot;</span> + <span class="built_in">this</span>.count, <span class="number">0</span>).show();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">onClick</span><span class="params">(View v)</span> &#123;</span><br><span class="line">        <span class="type">IncrementalChange</span> <span class="variable">var2</span> <span class="operator">=</span> $change;</span><br><span class="line">        <span class="keyword">if</span> (var2 != <span class="literal">null</span>) &#123;</span><br><span class="line">            var2.access$dispatch(<span class="string">&quot;onClick.(Landroid/view/View;)V&quot;</span>, <span class="keyword">new</span> <span class="title class_">Object</span>[]&#123;<span class="built_in">this</span>, v&#125;);</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            <span class="built_in">this</span>.toBeFix();</span><br><span class="line">            ++<span class="built_in">this</span>.count;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    MainActivity(Object[] var1, InstantReloadException var2) &#123;</span><br><span class="line">        <span class="type">String</span> <span class="variable">var3</span> <span class="operator">=</span> (String)var1[<span class="number">1</span>];</span><br><span class="line">        <span class="keyword">switch</span>(var3.hashCode()) &#123;</span><br><span class="line">        <span class="keyword">case</span> -<span class="number">1230767868</span>:</span><br><span class="line">            <span class="built_in">super</span>();</span><br><span class="line">            <span class="keyword">return</span>;</span><br><span class="line">        <span class="keyword">case</span> -<span class="number">669279916</span>:</span><br><span class="line">            <span class="built_in">this</span>();</span><br><span class="line">            <span class="keyword">return</span>;</span><br><span class="line">        <span class="keyword">default</span>:</span><br><span class="line">            <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">InstantReloadException</span>(String.format(<span class="string">&quot;String switch could not find &#x27;%s&#x27; with hashcode %s in %s&quot;</span>, var3, var3.hashCode(), <span class="string">&quot;com/example/wuyi/instantruntest/MainActivity&quot;</span>));</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>我们可以发现这些变化：</p>
+<ul>
+<li>在MainActivity类的开头声明了一个com.android.tools.ir.runtime.IncrementalChange类型的$change变量（这个字段是插件gradle添加的）</li>
+<li>在之后的原方法中都会有一个判断$change是否为空，如果为空则执行原始代码，如果不为空则调用access$dispatch，执行补丁类的代码</li>
+</ul>
+<p>$change是由instantrun工具自动生成的，access$dispatch是他唯一的方法。</p>
+<p>我们提出的问题可以转换为：$change是如何在我们改动代码之后被修改的？</p>
+<p>首先，$change字段的更新是通过反射和动态加载完成的。在修改代码并apple changes后，首先由gradle插件识别被修改的类和方法，生成包含新实现的代理类。</p>
+<blockquote>
+<p>代理类就是在原始类名后添加$override后缀，比如MainActivity$override。说白了<code>MainActivity$override</code>基本上就是MainActivity的副本，主要改动的地方就是<code>toBeFix</code>方法中的文案，同时没有为了支持补丁机制的插桩代码。</p>
+</blockquote>
+<p>代理类会被编译打包成dex文件，再和资源补丁一起打包位zip文件，并由android studio通过adb推送到应用数据目录（如&#x2F;data&#x2F;data&#x2F;com.example.app&#x2F;files&#x2F;instant-run&#x2F;）</p>
+<p>在接收到补丁之后，潜伏在应用中的InstantRunRuntime就会在补丁文件路径下检测到补丁文件，创建一个DexClassLoader加载补丁Dex，并在之后通过反射获取到原始类的$change字段，创建好补丁类（就是之前提到的代理类）实例之后将其赋值给$change字段。</p>
+<p>其实以上对应的是instantrun的热启动方式，也就是在对原始代码修改较小的时候，最理想、最快捷的补丁方式</p>
+<ul>
+<li><strong>热启动</strong>：只能修改方法体，不能新增 &#x2F; 删除字段、方法或类，此时不用对应用做任何变动就能跑通补丁</li>
+<li><strong>冷启动触发</strong>：如果变更超出热启动范围，Instant Run 会触发<strong>温启动</strong>（重启 Activity）或<strong>冷启动</strong>（重新安装应用）。</li>
+</ul>
+<p>相较于热启动，其他两种启动方式的区别就是在重启应用的时候新建一个自定义的ClassLoader加载所有的dex文件（包括补丁dex）。</p>
+<p>但是他们都只能在原始代码的框架下缝缝补补，不能新增或删除类、字段、方法签名，在AS4.0版本instantRun也被Apply Changes替代。</p>
+<p><strong>2、关于robust</strong></p>
+<p>了解了instantRun，理解robust就很简单了。robust和instantRun一样，也是通过代码插桩和动态加载实现的热补丁。</p>
+<p>首先，robust也是通过一个类似于$change的字段来判断有没有修复补丁的——changeQuickRedirect</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">MainActivity</span> <span class="keyword">extends</span> <span class="title class_">AppCompatActivity</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> ChangeQuickRedirect changeQuickRedirect;</span><br><span class="line">	<span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">onBackPressed</span><span class="params">()</span> &#123;</span><br><span class="line">        <span class="keyword">if</span> (PatchProxy.isSupport(<span class="keyword">new</span> <span class="title class_">Object</span>[<span class="number">0</span>], <span class="built_in">this</span>, changeQuickRedirect, <span class="literal">false</span>, <span class="number">1</span>, <span class="keyword">new</span> <span class="title class_">Class</span>[<span class="number">0</span>], Void.TYPE)) &#123;</span><br><span class="line">            PatchProxy.accessDispatch(<span class="keyword">new</span> <span class="title class_">Object</span>[<span class="number">0</span>], <span class="built_in">this</span>, changeQuickRedirect, <span class="literal">false</span>, <span class="number">1</span>, <span class="keyword">new</span> <span class="title class_">Class</span>[<span class="number">0</span>], Void.TYPE);</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            <span class="built_in">super</span>.onBackPressed();</span><br><span class="line">            finish();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<p>这是截取了一个robust补丁应用的一部分，编译阶段会在类中插桩一个changeQuickRedirect字段，然后在每个方法中插入补丁检查逻辑查看changeQuickRedirect是否非空。patchproxy中封装了获取当前classname和methodname的逻辑，如果检查需要hook通过则通过accessDispatch方法执行补丁方法的具体逻辑。</p>
+<p>对于生成加载补丁的部分，有很多方面和instantRun不同。首先，补丁类是开发人员手动编写的，而不是像instantRun通过Gradle自动生成一个代理类；其实除此之外，开发人员还需要编写一个控制类——所谓控制类，就是之前提到那个要检测非空的changeQuickRedirect。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">MainActivityPatchControl</span> <span class="keyword">implements</span> <span class="title class_">ChangeQuickRedirect</span> &#123;</span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="keyword">public</span> <span class="type">boolean</span> <span class="title function_">isSupport</span><span class="params">(String methodSignature, Object[] args)</span> &#123;</span><br><span class="line">        <span class="comment">// 解析方法签名，判断是否为需要修复的方法</span></span><br><span class="line">        <span class="type">String</span> <span class="variable">methodId</span> <span class="operator">=</span> methodSignature.split(<span class="string">&quot;:&quot;</span>)[<span class="number">3</span>];</span><br><span class="line">        <span class="keyword">return</span> <span class="string">&quot;1&quot;</span>.equals(methodId); <span class="comment">// 假设方法编号1对应getText()</span></span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="keyword">public</span> Object <span class="title function_">accessDispatch</span><span class="params">(String methodSignature, Object[] args)</span> &#123;</span><br><span class="line">        <span class="comment">// 获取原始类实例</span></span><br><span class="line">        <span class="type">MainActivity</span> <span class="variable">target</span> <span class="operator">=</span> (MainActivity) args[args.length - <span class="number">1</span>];</span><br><span class="line">        </span><br><span class="line">        <span class="comment">// 创建并调用补丁类方法</span></span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">new</span> <span class="title class_">MainActivityPatch</span>(target).RobustPublicgetText();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>在调用补丁类方法的过程中，采用的是反射调用的方法，而不是直接将代理类直接创建实例赋值——robust通过给方法编号标识，再在补丁控制类中通过编号映射到具体的补丁方法。</p>
+<p>robust的补丁包除了补丁类和补丁控制类之外，还有一个补丁包说明类，用来获取所有补丁对象：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">PatchesInfoImpl</span> <span class="keyword">implements</span> <span class="title class_">PatchesInfo</span></span><br><span class="line"> &#123;</span><br><span class="line">  <span class="keyword">public</span> List <span class="title function_">getPatchedClassesInfo</span><span class="params">()</span></span><br><span class="line">   &#123;</span><br><span class="line">     <span class="type">ArrayList</span> <span class="variable">localArrayList</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">ArrayList</span>();</span><br><span class="line">     localArrayList.add(<span class="keyword">new</span>  <span class="title class_">PatchedClassInfo</span>(<span class="string">&quot;com.xxx.android.robustdemo.MainActivity&quot;</span>, <span class="string">&quot;com.bytedance.robust.patch.MainActivityPatchControl&quot;</span>));</span><br><span class="line">     com.meituan.robust.utils.EnhancedRobustUtils.isThrowable = <span class="literal">false</span>;</span><br><span class="line">     <span class="keyword">return</span> localArrayList;</span><br><span class="line">   &#125;</span><br><span class="line">  &#125;</span><br></pre></td></tr></table></figure>
+
+<p>接着还是由Gradle生成dex文件，由服务器（当然这里不是android studio了）推送给设备下的补丁目录中，比如&#x2F;data&#x2F;data&#x2F;com.example.app&#x2F;files&#x2F;patch.jar。在应用启动时，由PatchExecutor类读取指定路径下的.jar包，通过DexClassLoader加载好补丁Dex，读取PatchInfoImp的类信息利用反射将控制类赋值给changeQuickRedirect。这一段神似instantRun，不再赘述。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">PatchManager</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">loadPatch</span><span class="params">(Context context)</span> &#123;</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            <span class="comment">// 1. 加载补丁DEX</span></span><br><span class="line">            <span class="type">DexClassLoader</span> <span class="variable">classLoader</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">DexClassLoader</span>(</span><br><span class="line">                patchPath,</span><br><span class="line">                context.getCacheDir().getPath(),</span><br><span class="line">                <span class="literal">null</span>,</span><br><span class="line">                context.getClassLoader()</span><br><span class="line">            );</span><br><span class="line">            </span><br><span class="line">            <span class="comment">// 2. 获取控制类实例</span></span><br><span class="line">            Class&lt;?&gt; controlClass = classLoader.loadClass(<span class="string">&quot;com.example.MainActivityPatchControl&quot;</span>);</span><br><span class="line">            <span class="type">ChangeQuickRedirect</span> <span class="variable">controlInstance</span> <span class="operator">=</span> (ChangeQuickRedirect) controlClass.newInstance();</span><br><span class="line">            </span><br><span class="line">            <span class="comment">// 3. 反射赋值给changeQuickRedirect字段</span></span><br><span class="line">            Class&lt;?&gt; targetClass = Class.forName(<span class="string">&quot;com.example.MainActivity&quot;</span>);</span><br><span class="line">            <span class="type">Field</span> <span class="variable">changeField</span> <span class="operator">=</span> targetClass.getDeclaredField(<span class="string">&quot;changeQuickRedirect&quot;</span>);</span><br><span class="line">            changeField.setAccessible(<span class="literal">true</span>);</span><br><span class="line">            changeField.set(<span class="literal">null</span>, controlInstance);</span><br><span class="line">        &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">            e.printStackTrace();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>其实相比instantRun，Robust还有一点更值得说说的是：它支持新增方法或者字段。</p>
+<p>除了补丁类、补丁控制类、补丁说明类，robust的补丁包中还还还有一个补丁管理类，其中通过静态Map存储新增字段</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 补丁包中的PatchManager.java</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">PatchManager</span> &#123;</span><br><span class="line">    <span class="comment">// 静态Map：存储所有实例的新增字段</span></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> Map&lt;Object, Map&lt;String, Object&gt;&gt; FIELD_MAP = <span class="keyword">new</span> <span class="title class_">HashMap</span>&lt;&gt;();</span><br><span class="line">    </span><br><span class="line">    <span class="comment">// 获取字段值</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> Object <span class="title function_">getField</span><span class="params">(Object instance, String fieldName)</span> &#123;</span><br><span class="line">        Map&lt;String, Object&gt; fields = FIELD_MAP.get(instance);</span><br><span class="line">        <span class="keyword">return</span> fields != <span class="literal">null</span> ? fields.get(fieldName) : <span class="literal">null</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>在被应用加载后，静态map就一直存储在应用进程的内存中。当需要时，原始类会通过代理方法应用静态map</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 原始类（在基线APK中）</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">MainActivity</span> &#123;</span><br><span class="line">    <span class="comment">// 代理方法：访问新增字段</span></span><br><span class="line">    <span class="keyword">public</span> String <span class="title function_">getNewField</span><span class="params">()</span> &#123;</span><br><span class="line">        <span class="keyword">return</span> (String) PatchManager.getField(<span class="built_in">this</span>, <span class="string">&quot;newField&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>之前也提到，由于补丁类和补丁控制类都是手动编写的，所以自然可以直接在补丁类中实现新增方法并将其编号，再在补丁控制类中映射到具体实现。</p>
+<p>刚好这里有一道robust技术相关的ctf赛题，贴合实际来看看具体是怎么更换方法的（其实一开始我看不懂这道题于是来学习补丁和hook技术原理，为了这碟醋包的饺子）</p>
+<h2 id="DDCTF2018-安卓逆向-Hello-Baby-Dex"><a href="#DDCTF2018-安卓逆向-Hello-Baby-Dex" class="headerlink" title="DDCTF2018 安卓逆向 Hello Baby Dex"></a>DDCTF2018 安卓逆向 Hello Baby Dex</h2><h2 id="Reference"><a href="#Reference" class="headerlink" title="Reference"></a>Reference</h2><p><a class="link"   target="_blank" rel="noopener" href="https://blog.csdn.net/hzl9966/article/details/51770606" >热补丁技术解析-CSDN博客<i class="fas fa-external-link-alt"></i></a></p>
+<p><a class="link"   target="_blank" rel="noopener" href="https://juejin.cn/post/6844903431744782350" >Android 中免 Root 实现 Hook 的 Dexposed 实现原理解析以及如何实现应用的热修复今天我们来看一 - 掘金<i class="fas fa-external-link-alt"></i></a></p>
+<p><a class="link"   target="_blank" rel="noopener" href="https://www.cnblogs.com/linghu-java/p/9677633.html" >Android热补丁技术—dexposed原理简析(阿里Hao) - linghu_java - 博客园<i class="fas fa-external-link-alt"></i></a></p>
+<p><a class="link"   target="_blank" rel="noopener" href="https://xiaozhuanlan.com/topic/5276903841" >我为 Dexposed 续一秒：论 ART 上运行时 Method AOP 实现 － 小专栏<i class="fas fa-external-link-alt"></i></a></p>
+<p><a class="link"   target="_blank" rel="noopener" href="https://juejin.cn/post/6844903472756686862?searchId=202505081912165A8F79BABACC2D65DC8A#heading-18" >AndFix - 热修复方案原理分析AndFix 是阿里开源的一种在线 bug 热修复的方案，当线上应用出现紧急 Bug - 掘金<i class="fas fa-external-link-alt"></i></a></p>
+<p><a class="link"   target="_blank" rel="noopener" href="http://jiajixin.cn/2015/11/25/instant-run/" >Instant Run 浅析 | Jason’s Blog<i class="fas fa-external-link-alt"></i></a></p>
+<p>[从Instant run谈Android替换Application和动态加载机制 | w4lle’s Notes](<a class="link"   target="_blank" rel="noopener" href="http://w4lle.com/2016/05/02/%E4%BB%8EInstant" >http://w4lle.com/2016/05/02/从Instant<i class="fas fa-external-link-alt"></i></a> run谈Android替换Application和动态加载机制&#x2F;)</p>
+<p><a class="link"   target="_blank" rel="noopener" href="https://juejin.cn/post/6844903945991618573" >深入理解Instant Run——原理篇Instant-run是Android Studio 2.0开始引入的新特性，它 - 掘金<i class="fas fa-external-link-alt"></i></a></p>
+<p><a class="link"   target="_blank" rel="noopener" href="https://tech.meituan.com/2016/09/14/android-robust.html" >Android热更新方案Robust - 美团技术团队<i class="fas fa-external-link-alt"></i></a></p>
+<p><a class="link"   target="_blank" rel="noopener" href="http://w4lle.com/2017/03/31/robust-0/" >Android热补丁之Robust原理解析(一) | w4lle’s Notes<i class="fas fa-external-link-alt"></i></a></p>
+<p><a class="link"   target="_blank" rel="noopener" href="https://tech.meituan.com/2023/05/18/robust-2.0-android-r8.html" >Robust 2.0：支持Android R8的升级版热修复框架 - 美团技术团队<i class="fas fa-external-link-alt"></i></a></p>
+<p><a class="link"   target="_blank" rel="noopener" href="https://www.secpulse.com/archives/70949.html" >DDCTF 2018 Android WriteUp - SecPulse.COM | 安全脉搏<i class="fas fa-external-link-alt"></i></a></p>
+<p>[<a class="link"   target="_blank" rel="noopener" href="https://bbs.kanxue.com/thread-229597.htm#msg_header_h2_1" >原创]进阶Frida–Android逆向之动态加载dex Hook（三）（上篇）-Android安全-看雪-安全社区|安全招聘|kanxue.com<i class="fas fa-external-link-alt"></i></a></p>
+
+                    
+                </div>
+
+                
+                        
+<div class="post-copyright-info-container border-box">
+    <div class="copyright-info-content border-box">
+        <div class="copyright-info-top border-box">
+            <div class="copyright-post-title border-box text-ellipsis">
+                从instant run到热补丁框架Robust
+            </div>
+
+            <div class="copyright-post-link border-box text-ellipsis">
+                2025/05/02/从instant-run到热补丁框架Robust/
+            </div>
+        </div>
+
+        <div class="copyright-info-bottom border-box">
+            <div class="copyright-post-author bottom-item">
+                <div class="type">
+                    作者
+                </div>
+                <div class="content">Marce1</div>
+            </div>
+
+            <div class="post-time bottom-item">
+                <div class="type">
+                    发布于
+                </div>
+                <div class="content">2025-05-02 16:44</div>
+            </div>
+
+
+            <div class="post-license bottom-item">
+                <div class="type">
+                    许可
+                </div>
+                <div class="content tooltip" data-tooltip-content="CC BY-NC-SA 4.0">
+                    <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh-hans" target="_blank">
+                        
+                            <i class="fa-brands fa-creative-commons"></i>
+                            <i class="fa-brands fa-creative-commons-by"></i>
+                            <i class="fa-brands fa-creative-commons-nc"></i>
+                            <i class="fa-brands fa-creative-commons-sa"></i>
+                        
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <i class="copyright-bg fa-solid fa-copyright"></i>
+    </div>
+    <div class="copy-copyright-info flex-center tooltip" data-tooltip-content="复制版权信息" data-tooltip-offset-y="-2px">
+        <i class="fa-solid fa-copy"></i>
+    </div>
+</div>
+
+                
+
+                <div class="post-bottom-tags-and-share border-box">
+                    <div>
+                        
+                            <ul class="post-tags-box border-box">
+                                
+                                    <li class="tag-item border-box">
+                                        <i class="icon fas fa-hashtag"></i>&nbsp;<a href="/tags/to-do-list/">to_do_list</a>
+                                    </li>
+                                
+                                    <li class="tag-item border-box">
+                                        <i class="icon fas fa-hashtag"></i>&nbsp;<a href="/tags/android/">android</a>
+                                    </li>
+                                
+                            </ul>
+                        
+                    </div>
+                    <div>
+                        
+                            <div class="post-share-container border-box">
+    <ul class="share-list-wrap border-box">
+        <li class="qq share-item border-box flex-center tooltip"
+            data-tooltip-content="分享到 QQ"
+        >
+            <i class="fa-brands fa-qq"></i>
+        </li>
+        <li class="wechat share-item border-box flex-center tooltip tooltip-img"
+            data-tooltip-content="分享到微信"
+            data-tooltip-img-tip="微信扫一扫"
+            data-tooltip-img-style="background-color: #fff; top: -10px; padding: 0.6rem 0.6rem 0.1rem 0.6rem;"
+        >
+            <i class="fa-brands fa-weixin"></i>
+        </li>
+        <li class="weibo share-item border-box flex-center tooltip"
+            data-tooltip-content="分享到微博"
+        >
+            <i class="fa-brands fa-weibo"></i>
+        </li>
+    </ul>
+</div>
+
+                        
+                    </div>
+                </div>
+
+                
+
+                
+                    <div class="post-nav border-box">
+                        
+                        
+                            <div class="next-post">
+                                <a class="next"
+                                   rel="next"
+                                   href="/2025/05/01/how-to-write-frida-in-ts/"
+                                   title="how_to_write_frida_in_ts"
+                                >
+                                    <span class="title flex-center">
+                                        <span class="post-nav-title-item text-ellipsis">how_to_write_frida_in_ts</span>
+                                        <span class="post-nav-item">下一篇</span>
+                                    </span>
+                                    <span class="right arrow-icon flex-center">
+                                        <i class="fas fa-chevron-right"></i>
+                                    </span>
+                                </a>
+                            </div>
+                        
+                    </div>
+                
+
+                
+                    
+
+
+
+
+
+
+                
+            </div>
+        </div>
+
+        
+            <div class="pc-post-toc right-toc">
+                <div class="post-toc-wrap border-box">
+    <div class="post-toc border-box">
+        <ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%BF%99%E6%98%AF%E4%BB%80%E4%B9%88%EF%BC%9F"><span class="nav-text">这是什么？</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%80%E4%BA%9B%E5%B8%B8%E8%A7%81%E7%9A%84%E7%83%AD%E8%A1%A5%E4%B8%81%E6%80%9D%E8%B7%AF"><span class="nav-text">一些常见的热补丁思路</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%9F%BA%E4%BA%8E%E6%96%B9%E6%B3%95%E6%9B%BF%E6%8D%A2%E7%9A%84-Hook%E2%80%94%E2%80%94xposed%E6%A1%86%E6%9E%B6"><span class="nav-text">基于方法替换的 Hook——xposed框架</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BB%8Einstantrun%E5%88%B0robust"><span class="nav-text">从instantrun到robust</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#DDCTF2018-%E5%AE%89%E5%8D%93%E9%80%86%E5%90%91-Hello-Baby-Dex"><span class="nav-text">DDCTF2018 安卓逆向 Hello Baby Dex</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Reference"><span class="nav-text">Reference</span></a></li></ol>
+    </div>
+</div>
+
+            </div>
+        
+    </div>
+</div>
+
+
+                
+            </div>
+        </div>
+
+        <div class="page-main-content-bottom border-box">
+            
+<footer class="footer border-box">
+    <div class="copyright-info info-item">
+        &copy;&nbsp;<span>2020</span>&nbsp;-&nbsp;2025
+        
+            &nbsp;<i class="fas fa-heart icon-animate"></i>&nbsp;&nbsp;<a href="/">Marce1</a>
+        
+    </div>
+
+    <div class="theme-info info-item">
+        由&nbsp;<a target="_blank" href="https://hexo.io">Hexo</a>&nbsp;驱动&nbsp;&&nbsp;主题&nbsp;<a class="keep-version" target="_blank" href="https://github.com/XPoet/hexo-theme-keep">Keep</a>
+    </div>
+
+    
+
+    
+        <div class="count-info info-item">
+            
+                <span class="count-item border-box word">
+                    <span class="item-type border-box">总字数</span>
+                    <span class="item-value border-box word">42.6k</span>
+                </span>
+            
+
+            
+                <span class="count-item border-box uv">
+                    <span class="item-type border-box">访客数</span>
+                    <span class="item-value border-box uv" id="busuanzi_value_site_uv"></span>
+                </span>
+            
+
+            
+                <span class="count-item border-box pv">
+                    <span class="item-type border-box">访问量</span>
+                    <span class="item-value border-box pv" id="busuanzi_value_site_pv"></span>
+                </span>
+            
+        </div>
+    
+
+    
+</footer>
+
+        </div>
+    </div>
+
+    <!-- post tools -->
+    
+        <div class="post-tools right-toc">
+            <div class="post-tools-container border-box">
+    <ul class="post-tools-list border-box">
+        <!-- PC encrypt again -->
+        
+
+        <!-- PC TOC show toggle -->
+        
+            <li class="tools-item flex-center toggle-show-toc">
+                <i class="fas fa-list"></i>
+            </li>
+        
+
+        <!-- PC go comment -->
+        
+
+        <!-- PC full screen -->
+        <li class="tools-item flex-center full-screen">
+            <i class="fa-solid fa-expand"></i>
+        </li>
+    </ul>
+</div>
+
+        </div>
+    
+
+    <!-- side tools -->
+    <div class="side-tools">
+        <div class="side-tools-container border-box ">
+    <ul class="side-tools-list side-tools-show-handle border-box">
+        <li class="tools-item tool-font-adjust-plus flex-center">
+            <i class="fas fa-search-plus"></i>
+        </li>
+
+        <li class="tools-item tool-font-adjust-minus flex-center">
+            <i class="fas fa-search-minus"></i>
+        </li>
+
+        <!-- toggle mode -->
+        
+            <li class="tools-item tool-toggle-theme-mode flex-center">
+                <i class="fas fa-moon"></i>
+            </li>
+        
+
+        <!-- rss -->
+        
+
+        <!-- to bottom -->
+        <li class="tools-item tool-scroll-to-bottom flex-center">
+            <i class="fas fa-arrow-down"></i>
+        </li>
+    </ul>
+
+    <ul class="exposed-tools-list border-box">
+        
+            <li class="tools-item toggle-show-toc-tablet flex-center">
+                <i class="fas fa-list"></i>
+            </li>
+        
+
+        
+
+        <li class="tools-item tool-toggle-show flex-center">
+            <i class="fas fa-cog fa-spin"></i>
+        </li>
+
+        <li class="tools-item tool-scroll-to-top flex-center show-arrow">
+            <i class="arrow fas fa-arrow-up"></i>
+            <span class="percent"></span>
+        </li>
+    </ul>
+</div>
+
+    </div>
+
+    <!-- image mask -->
+    <div class="zoom-in-image-mask">
+    <img class="zoom-in-image">
+</div>
+
+
+    <!-- local search -->
+    
+        <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+          <span class="search-input-field-pre">
+            <i class="fas fa-keyboard"></i>
+          </span>
+            <div class="search-input-container">
+                <input autocomplete="off"
+                       autocorrect="off"
+                       autocapitalize="off"
+                       placeholder="搜索..."
+                       spellcheck="false"
+                       type="search"
+                       class="search-input"
+                >
+            </div>
+            <span class="close-popup-btn">
+                <i class="fas fa-times"></i>
+            </span>
+        </div>
+        <div id="search-result">
+            <div id="no-result">
+                <i class="fas fa-spinner fa-pulse fa-5x fa-fw"></i>
+            </div>
+        </div>
+    </div>
+</div>
+
+    
+
+    <!-- tablet toc -->
+    
+        <div class="tablet-post-toc-mask">
+            <div class="tablet-post-toc">
+                <div class="post-toc-wrap border-box">
+    <div class="post-toc border-box">
+        <ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%BF%99%E6%98%AF%E4%BB%80%E4%B9%88%EF%BC%9F"><span class="nav-text">这是什么？</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%80%E4%BA%9B%E5%B8%B8%E8%A7%81%E7%9A%84%E7%83%AD%E8%A1%A5%E4%B8%81%E6%80%9D%E8%B7%AF"><span class="nav-text">一些常见的热补丁思路</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%9F%BA%E4%BA%8E%E6%96%B9%E6%B3%95%E6%9B%BF%E6%8D%A2%E7%9A%84-Hook%E2%80%94%E2%80%94xposed%E6%A1%86%E6%9E%B6"><span class="nav-text">基于方法替换的 Hook——xposed框架</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BB%8Einstantrun%E5%88%B0robust"><span class="nav-text">从instantrun到robust</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#DDCTF2018-%E5%AE%89%E5%8D%93%E9%80%86%E5%90%91-Hello-Baby-Dex"><span class="nav-text">DDCTF2018 安卓逆向 Hello Baby Dex</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Reference"><span class="nav-text">Reference</span></a></li></ol>
+    </div>
+</div>
+
+            </div>
+        </div>
+    
+</main>
+
+
+
+
+
+<!-- common js -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/hexo-theme-keep/4.2.3/js/utils.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/hexo-theme-keep/4.2.3/js/header-shrink.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/hexo-theme-keep/4.2.3/js/back2top.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/hexo-theme-keep/4.2.3/js/toggle-theme.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/hexo-theme-keep/4.2.3/js/code-block.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/hexo-theme-keep/4.2.3/js/main.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/hexo-theme-keep/4.2.3/js/libs/anime.min.js"></script>
+
+<!-- local search -->
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/hexo-theme-keep/4.2.3/js/local-search.min.js"></script>
+
+
+<!-- lazyload -->
+
+
+<div class="pjax">
+    <!-- home page -->
+    
+
+    <!-- post page -->
+    
+        <!-- post-helper -->
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/hexo-theme-keep/4.2.3/js/post/post-helper.min.js"></script>
+
+        <!-- toc -->
+        
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/hexo-theme-keep/4.2.3/js/post/toc.min.js"></script>
+        
+
+        <!-- copyright-info -->
+        
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/hexo-theme-keep/4.2.3/js/post/copyright-info.min.js"></script>
+        
+
+        <!-- share -->
+        
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/hexo-theme-keep/4.2.3/js/post/share.min.js"></script>
+        
+    
+
+    <!-- categories page -->
+    
+
+    <!-- links page -->
+    
+
+    <!-- photos page -->
+    
+
+    <!-- tools page -->
+    
+</div>
+
+<!-- mermaid -->
+
+
+<!-- pjax -->
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/hexo-theme-keep/4.2.3/js/libs/pjax.min.js"></script>
+<script>
+    window.addEventListener('DOMContentLoaded', () => {
+        window.pjax = new Pjax({
+            selectors: [
+                'head title',
+                '.page-container',
+                '.pjax'
+            ],
+            history: true,
+            debug: false,
+            cacheBust: false,
+            timeout: 0,
+            analytics: false,
+            currentUrlFullReload: false,
+            scrollRestoration: false,
+        });
+
+        document.addEventListener('pjax:send', () => {
+            KEEP.utils.pjaxProgressBarStart()
+        });
+
+        document.addEventListener('pjax:complete', () => {
+            KEEP.utils.pjaxProgressBarEnd()
+            window.pjax.executeScripts(document.querySelectorAll('script[data-pjax], .pjax script'))
+            KEEP.initExecute()
+        });
+    });
+</script>
+
+
+
+
+</body>
+</html>
